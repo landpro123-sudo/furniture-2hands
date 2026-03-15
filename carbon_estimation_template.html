@@ -89,14 +89,42 @@
         }
 
         /* 計算區 */
-        .calc-grid {
+        .calc-rows-container { margin-bottom: 16px; }
+        .calc-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 12px;
+            align-items: end;
+            margin-bottom: 12px;
         }
         @media (max-width: 600px) {
-            .calc-grid { grid-template-columns: 1fr; }
+            .calc-row { grid-template-columns: 1fr 1fr; }
+            .calc-row .btn-remove-row { grid-column: 1 / -1; }
         }
+        .calc-actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .btn-add-row {
+            padding: 10px 18px;
+            background: var(--green-100);
+            border: 2px solid var(--green-400);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--green-800);
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-add-row:hover { background: var(--green-200); }
+        .btn-remove-row {
+            padding: 8px 12px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 6px;
+            color: #b91c1c;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-remove-row:hover { background: #fee2e2; }
         .field-group label {
             display: block;
             font-size: 0.875rem;
@@ -571,27 +599,9 @@
         <!-- 二、減碳計算 -->
         <section id="sectionCalc" class="card">
             <h2 class="card-title">📊 減碳計算</h2>
-            <div class="calc-grid">
-                <div class="field-group">
-                    <label for="category">家具類別</label>
-                    <select id="category">
-                        <option value="">請選擇</option>
-                        <option value="desk" data-weight="25">書桌</option>
-                        <option value="sofa" data-weight="60">沙發</option>
-                        <option value="wardrobe" data-weight="40">衣櫃</option>
-                        <option value="bed" data-weight="35">床架</option>
-                        <option value="chair" data-weight="8">椅子</option>
-                        <option value="table" data-weight="15">茶几</option>
-                        <option value="bookshelf" data-weight="30">書櫃</option>
-                        <option value="dining_table" data-weight="30">餐桌</option>
-                        <option value="dresser" data-weight="35">梳妝台</option>
-                        <option value="other" data-weight="20">其他</option>
-                    </select>
-                </div>
-                <div class="field-group">
-                    <label for="weight">重量 (kg) — 選填，有填則優先使用</label>
-                    <input type="number" id="weight" placeholder="例：25" min="1" max="500" step="0.5">
-                </div>
+            <div id="calcRowsContainer" class="calc-rows-container"></div>
+            <div class="calc-actions">
+                <button type="button" class="btn-add-row" onclick="addCalcRow()">＋ 新增一筆</button>
                 <button class="btn-calc" onclick="calculate()">計算減碳量</button>
             </div>
             <div id="resultBox" class="result-box hidden">
@@ -696,34 +706,96 @@
             chair: '椅子', table: '茶几', bookshelf: '書櫃',
             dining_table: '餐桌', dresser: '梳妝台', other: '其他'
         };
+        const CATEGORY_OPTIONS = [
+            { value: 'desk', label: '書桌', weight: 25 },
+            { value: 'sofa', label: '沙發', weight: 60 },
+            { value: 'wardrobe', label: '衣櫃', weight: 40 },
+            { value: 'bed', label: '床架', weight: 35 },
+            { value: 'chair', label: '椅子', weight: 8 },
+            { value: 'table', label: '茶几', weight: 15 },
+            { value: 'bookshelf', label: '書櫃', weight: 30 },
+            { value: 'dining_table', label: '餐桌', weight: 30 },
+            { value: 'dresser', label: '梳妝台', weight: 35 },
+            { value: 'other', label: '其他', weight: 20 }
+        ];
 
         let lastCo2 = 0;
-        let lastCategory = '';
+        let lastItems = [];
 
-        function getWeight() {
-            const category = document.getElementById('category');
-            const weightInput = document.getElementById('weight');
-            const customWeight = parseFloat(weightInput.value);
+        function makeCalcRowHtml() {
+            const opts = '<option value="">請選擇</option>' + CATEGORY_OPTIONS.map(o =>
+                `<option value="${o.value}" data-weight="${o.weight}">${o.label}</option>`
+            ).join('');
+            return `<div class="calc-row">
+                <div class="field-group">
+                    <label>家具類別</label>
+                    <select class="calc-category">${opts}</select>
+                </div>
+                <div class="field-group">
+                    <label>重量 (kg) — 選填</label>
+                    <input type="number" class="calc-weight" placeholder="例：25" min="1" max="500" step="0.5">
+                </div>
+                <button type="button" class="btn-remove-row" onclick="removeCalcRow(this)">－ 刪除</button>
+            </div>`;
+        }
+        function addCalcRow() {
+            const container = document.getElementById('calcRowsContainer');
+            const div = document.createElement('div');
+            div.innerHTML = makeCalcRowHtml();
+            container.appendChild(div.firstElementChild);
+            updateRemoveBtnVisibility();
+        }
+        function removeCalcRow(btn) {
+            const container = document.getElementById('calcRowsContainer');
+            if (container.children.length <= 1) return;
+            btn.closest('.calc-row').remove();
+            updateRemoveBtnVisibility();
+        }
+        function updateRemoveBtnVisibility() {
+            const rows = document.querySelectorAll('#calcRowsContainer .calc-row');
+            rows.forEach((r, i) => {
+                const btn = r.querySelector('.btn-remove-row');
+                if (btn) btn.style.display = rows.length <= 1 ? 'none' : '';
+            });
+        }
+        function initCalcRows() {
+            const container = document.getElementById('calcRowsContainer');
+            container.innerHTML = makeCalcRowHtml();
+            updateRemoveBtnVisibility();
+        }
+
+        function getWeightForRow(row) {
+            const cat = row.querySelector('.calc-category');
+            const wInput = row.querySelector('.calc-weight');
+            const customWeight = parseFloat(wInput?.value);
             if (customWeight && customWeight > 0) return customWeight;
-            const defaultWeight = category.selectedOptions[0]?.dataset?.weight;
+            const defaultWeight = cat?.selectedOptions?.[0]?.dataset?.weight;
             return defaultWeight ? parseFloat(defaultWeight) : null;
         }
 
         function calculate() {
-            const category = document.getElementById('category');
-            if (!category.value) {
-                alert('請先選擇家具類別');
+            const rows = document.querySelectorAll('#calcRowsContainer .calc-row');
+            const items = [];
+            for (const row of rows) {
+                const cat = row.querySelector('.calc-category');
+                if (!cat?.value) continue;
+                const weight = getWeightForRow(row);
+                if (!weight) continue;
+                const co2 = Math.round(weight * EMISSION_FACTOR * 10) / 10;
+                items.push({
+                    category: cat.value,
+                    categoryLabel: CATEGORY_LABELS[cat.value] || cat.value,
+                    weight,
+                    co2
+                });
+            }
+            if (items.length === 0) {
+                alert('請至少填寫一筆：選擇家具類別，重量可選填（有填則優先使用）。');
                 return;
             }
-            const weight = getWeight();
-            if (!weight) {
-                alert('請輸入重量（選填欄位），或確認已選擇家具類別（將使用預設重量）');
-                return;
-            }
-            const co2 = Math.round(weight * EMISSION_FACTOR * 10) / 10;
-            lastCo2 = co2;
-            lastCategory = category.value;
-            showResult(co2);
+            lastItems = items;
+            lastCo2 = items.reduce((s, x) => s + x.co2, 0);
+            showResult(lastCo2);
             document.getElementById('btnRecord').disabled = false;
         }
 
@@ -820,23 +892,26 @@
         }
 
         async function recordTransaction() {
-            if (!lastCo2) return;
-            const tx = {
-                date: new Date().toISOString().slice(0, 10),
-                category: lastCategory,
-                categoryLabel: CATEGORY_LABELS[lastCategory] || lastCategory,
-                weight: getWeight(),
-                co2: lastCo2
-            };
+            if (!lastItems.length) return;
+            const date = new Date().toISOString().slice(0, 10);
+            const newTx = lastItems.map(x => ({
+                date,
+                category: x.category,
+                categoryLabel: x.categoryLabel,
+                weight: x.weight,
+                co2: x.co2
+            }));
             const list = await getTransactions();
-            list.unshift(tx);
+            for (let i = newTx.length - 1; i >= 0; i--) list.unshift(newTx[i]);
             await saveTransactions(list);
-            console.log('已記錄', lastCo2, 'kg');
+            console.log('已記錄', lastItems.length, '筆，共', lastCo2, 'kg');
 
-            const totalBefore = list.slice(1).reduce((s, x) => s + x.co2, 0);
+            const totalBefore = list.slice(newTx.length).reduce((s, x) => s + x.co2, 0);
             const totalAfter = totalBefore + lastCo2;
 
             playRecordAnimation(lastCo2, totalBefore, totalAfter);
+            lastItems = [];
+            document.getElementById('btnRecord').disabled = true;
             await renderContribution();
             setTimeout(() => {
                 document.getElementById('sectionContribution')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1185,6 +1260,7 @@
         });
 
         (async function init() {
+            initCalcRows();
             updateAuthUI(auth?.currentUser || null);
             await updateGreeting(auth?.currentUser || null);
             await updateWelcomeMessage(auth?.currentUser || null);
