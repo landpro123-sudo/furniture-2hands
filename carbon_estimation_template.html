@@ -285,28 +285,6 @@
         }
         .progress-text { font-size: 0.9rem; color: #6b7280; margin-top: 6px; }
 
-        /* 導航標籤 */
-        .nav-tabs {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-        .nav-tabs button {
-            padding: 10px 20px;
-            border: none;
-            background: #e5e7eb;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            cursor: pointer;
-            font-family: inherit;
-        }
-        .nav-tabs button.active {
-            background: var(--green-600);
-            color: white;
-        }
-        .nav-tabs button:hover:not(.active) { background: #d1d5db; }
-        .panel { display: none; }
-        .panel.active { display: block; }
         .btn-group { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
         .btn-group button {
             padding: 8px 16px;
@@ -320,6 +298,56 @@
         .btn-group button:hover { background: #f9fafb; }
         .empty-state { text-align: center; padding: 32px; color: #9ca3af; }
         #importFile { display: none; }
+
+        /* FB 登入區：顯眼加強 */
+        .auth-zone {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: linear-gradient(135deg, #e8f4fd 0%, #dbeafe 100%);
+            border: 2px solid #1877f2;
+            border-radius: var(--radius);
+        }
+        .auth-zone .fb-login-notice {
+            font-size: 0.9rem;
+            color: #1e40af;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+        .auth-zone .auth-buttons {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn-fb-login {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, #1877f2 0%, #0d65d9 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.05rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+            box-shadow: 0 4px 14px rgba(24, 119, 242, 0.4);
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .btn-fb-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(24, 119, 242, 0.5);
+        }
+        .btn-fb-login:active { transform: translateY(0); }
+        .btn-logout {
+            padding: 10px 20px;
+            background: #e5e7eb;
+            color: #4b5563;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-logout:hover { background: #d1d5db; }
 
         /* 暱稱區 */
         .nickname-row {
@@ -425,7 +453,38 @@
             background: var(--green-200);
             transform: translateY(-1px);
         }
+
+        /* 載入失敗提示 */
+        .load-error-banner {
+            display: none;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: var(--radius);
+            padding: 16px 20px;
+            margin-bottom: 20px;
+            color: #92400e;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+        .load-error-banner.visible { display: block; }
+        .load-error-banner .retry-btn {
+            margin-top: 12px;
+            padding: 8px 16px;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .load-error-banner .retry-btn:hover { background: #d97706; }
     </style>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 </head>
 <body>
     <div class="container">
@@ -435,13 +494,55 @@
             <p class="subtitle">延續使用 = 避免製造新品 = 減少碳排 · 您的每一件交流都是對環境的貢獻</p>
         </header>
 
-        <div class="nav-tabs">
-            <button class="active" data-panel="calc" onclick="showPanel('calc')">減碳試算</button>
-            <button data-panel="contribution" onclick="showPanel('contribution')">我的貢獻</button>
-        </div>
+        <!-- 一、我的貢獻（置頂） -->
+        <section id="sectionContribution" class="card">
+            <h2 class="card-title">🌳 我的貢獻</h2>
+            <div id="loadErrorBanner" class="load-error-banner">
+                可能是免費 Firestore 資料庫服務額度問題，請稍後再試，並請在 FB 通知社團管理者，謝謝。
+                <br><button class="retry-btn" onclick="hideDataLoadError(); renderContribution();">重試</button>
+            </div>
+            <div id="authZone" class="auth-zone">
+                <p class="fb-login-notice">📌 登入後才能累積每次二手家具交流後的減碳量，並可跨裝置同步您的貢獻。</p>
+                <div class="auth-buttons">
+                    <button id="btnFbLogin" class="btn-fb-login" onclick="loginWithFacebook()">🔵 用 Facebook 登入</button>
+                    <button id="btnLogout" class="btn-logout" onclick="logout()" style="display:none">登出</button>
+                </div>
+            </div>
+            <div class="nickname-row">
+                <span class="greeting" id="greeting">環保夥伴，這是你的貢獻！</span>
+                <input type="text" id="nicknameInput" placeholder="輸入暱稱（選填，優先於 FB 名稱顯示）" maxlength="20" onblur="saveNickname()" onkeydown="if(event.key==='Enter'){saveNickname();this.blur()}">
+            </div>
+            <div id="contributionEmpty" class="empty-state">
+                記錄家具流通，累積你的減碳貢獻。往下使用減碳計算，完成後點「記錄這次減碳結果」即可累積。
+            </div>
+            <div id="contributionContent" style="display:none">
+                <div class="result-main" style="margin-bottom:16px">
+                    累計 <span id="totalCo2">0</span> kg CO₂e
+                </div>
+                <div class="badge-zone" id="badgeZone" style="display:none"></div>
+                <div class="achievement-cards">
+                    <div class="achievement-card">
+                        <div class="label">棵樹一年吸收量</div>
+                        <div class="tree-display" id="treesYearDisplay"></div>
+                        <div class="label" id="treesYearCount" style="margin-top:4px">≈ 0 棵</div>
+                    </div>
+                    <div class="achievement-card">
+                        <div class="label">棵樹（百年生命）</div>
+                        <div class="tree-display" id="treesLifeDisplay"></div>
+                        <div class="label" id="treesLifeCount" style="margin-top:4px">0 棵</div>
+                    </div>
+                </div>
+                <div class="progress-bar-wrap">
+                    <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+                </div>
+                <div class="progress-text" id="progressText">再 20 kg，相當於多養一棵樹一年</div>
+                <p class="note" style="margin-top:12px;margin-bottom:0">往下拉可查看交易紀錄、匯出備份。</p>
+            </div>
+        </section>
 
-        <section id="panelCalc" class="card panel active">
-            <h2 class="card-title">📊 減碳試算</h2>
+        <!-- 二、減碳計算 -->
+        <section id="sectionCalc" class="card">
+            <h2 class="card-title">📊 減碳計算</h2>
             <div class="calc-grid">
                 <div class="field-group">
                     <label for="category">家具類別</label>
@@ -465,16 +566,36 @@
                 </div>
                 <button class="btn-calc" onclick="calculate()">計算減碳量</button>
             </div>
-
             <div id="resultBox" class="result-box hidden">
                 <div class="result-main">
                     <span id="co2Value">—</span> kg CO₂e
                 </div>
                 <div class="result-desc">相當於避免製造一件新家具所產生的碳排放</div>
                 <div class="result-equivalents" id="equivalents"></div>
-                <button id="btnRecord" class="btn-record" onclick="recordTransaction()" disabled>記錄這次交易</button>
+                <button id="btnRecord" class="btn-record" onclick="recordTransaction()" disabled>記錄這次減碳結果</button>
             </div>
-            <h2 class="card-title" style="margin-top:24px">📋 家具類別預設重量與估算減碳重量對照表</h2>
+            <p class="note" style="margin-top:16px">公式：減碳量 = 家具重量 × 1.2。概念：流通延續使用 = 避免製造新家具 = 避免該件家具生命週期中的碳排放。</p>
+        </section>
+
+        <!-- 三、交易紀錄（需要時往下拉查看） -->
+        <section id="sectionTxRecords" class="card" style="display:none">
+            <h2 class="card-title">📝 交易紀錄</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>日期</th><th>類別</th><th class="num">減碳 (kg)</th></tr></thead>
+                    <tbody id="txList"></tbody>
+                </table>
+            </div>
+            <div class="btn-group">
+                <button onclick="exportBackup()">匯出備份</button>
+                <button onclick="document.getElementById('importFile').click()">匯入還原</button>
+                <input type="file" id="importFile" accept=".json" onchange="importBackup(event)">
+            </div>
+        </section>
+
+        <!-- 四、家具類別預設重量與估算減碳重量對照表 -->
+        <section class="card">
+            <h2 class="card-title">📋 家具類別預設重量與估算減碳重量對照表</h2>
             <div class="table-wrap">
                 <table>
                     <thead>
@@ -501,68 +622,36 @@
             </div>
             <p class="note">排放係數參考：木製家具約 1.0～1.5 kg CO₂e/kg（研究文獻）。本表採用 1.2 作為保守估計。</p>
         </section>
-
-        <section id="panelContribution" class="card panel">
-            <h2 class="card-title">🌳 我的貢獻</h2>
-            <div class="nickname-row">
-                <span class="greeting" id="greeting">環保夥伴，這是你的貢獻！</span>
-                <input type="text" id="nicknameInput" placeholder="輸入暱稱（選填）" maxlength="20" onblur="saveNickname()" onkeydown="if(event.key==='Enter'){saveNickname();this.blur()}">
-            </div>
-            <div id="contributionEmpty" class="empty-state">
-                尚無交易記錄。完成減碳試算後，點「記錄這次交易」即可累積您的貢獻。
-            </div>
-            <div id="contributionContent" style="display:none">
-                <div class="result-main" style="margin-bottom:16px">
-                    累計 <span id="totalCo2">0</span> kg CO₂e
-                </div>
-                <div class="badge-zone" id="badgeZone" style="display:none"></div>
-                <div class="achievement-cards">
-                    <div class="achievement-card">
-                        <div class="label">棵樹一年吸收量</div>
-                        <div class="tree-display" id="treesYearDisplay"></div>
-                        <div class="label" id="treesYearCount" style="margin-top:4px">≈ 0 棵</div>
-                    </div>
-                    <div class="achievement-card">
-                        <div class="label">棵樹（百年生命）</div>
-                        <div class="tree-display" id="treesLifeDisplay"></div>
-                        <div class="label" id="treesLifeCount" style="margin-top:4px">0 棵</div>
-                    </div>
-                </div>
-                <div class="progress-bar-wrap">
-                    <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
-                </div>
-                <div class="progress-text" id="progressText">再 20 kg，相當於多養一棵樹一年</div>
-                <h3 style="font-size:1rem;margin:20px 0 12px">交易紀錄</h3>
-                <div class="table-wrap">
-                    <table>
-                        <thead><tr><th>日期</th><th>類別</th><th class="num">減碳 (kg)</th></tr></thead>
-                        <tbody id="txList"></tbody>
-                    </table>
-                </div>
-                <div class="btn-group">
-                    <button onclick="exportBackup()">匯出備份</button>
-                    <button onclick="document.getElementById('importFile').click()">匯入還原</button>
-                    <input type="file" id="importFile" accept=".json" onchange="importBackup(event)">
-                </div>
-            </div>
-        </section>
-
-        <section class="card">
-            <h2 class="card-title">📐 計算公式</h2>
-            <div class="formula-box">
-                減碳量 (kg CO₂e) = 家具重量 (kg) × 排放係數 (kg CO₂e / kg)
-            </div>
-            <p class="note">概念：流通延續使用 = 避免製造新家具 = 避免該件家具生命週期中的碳排放。</p>
-        </section>
     </div>
 
     <script>
+        // Firebase 設定（請替換為您的專案 firebaseConfig）
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZazLViznmDt67cJfwxQ7Humop8k2tJgg",
+            authDomain: "furniture-2hands.firebaseapp.com",
+            projectId: "furniture-2hands",
+            storageBucket: "furniture-2hands.firebasestorage.app",
+            messagingSenderId: "820400148942",
+            appId: "1:828488148942:web:d183d72c4d7a8259d6db9f",
+            measurementId: "G-T9645F0DHG"
+        };
+        let db = null;
+        let auth = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            auth = firebase.auth();
+        } catch (e) {
+            console.warn('Firebase 初始化失敗，使用 localStorage', e);
+        }
+
         const EMISSION_FACTOR = 1.2;
         const CO2_PER_TREE_YEAR = 20;   // 一棵樹一年吸收量
         const CO2_PER_20_TREES = 400;   // 20 棵樹一年吸收量
         const CO2_PER_TREE_LIFE = 1000; // 一棵樹百年生命週期
         const STORAGE_KEY = 'furniture_transactions';
         const NICKNAME_KEY = 'furniture_nickname';
+        const DEVICE_ID_KEY = 'furniture_device_id';
 
         const CATEGORY_LABELS = {
             desk: '書桌', sofa: '沙發', wardrobe: '衣櫃', bed: '床架',
@@ -616,18 +705,83 @@
             `;
         }
 
-        function getTransactions() {
+        /** 資料載入失敗時顯示（含 Firestore 額度用盡）。整合 Firestore 時，在 getDocs/onSnapshot 的 catch 中呼叫 showDataLoadError() */
+        function showDataLoadError() {
+            const el = document.getElementById('loadErrorBanner');
+            if (el) el.classList.add('visible');
+        }
+        function hideDataLoadError() {
+            const el = document.getElementById('loadErrorBanner');
+            if (el) el.classList.remove('visible');
+        }
+
+        function getDeviceId() {
+            let id = localStorage.getItem(DEVICE_ID_KEY);
+            if (!id) {
+                id = 'd_' + Math.random().toString(36).slice(2) + '_' + Date.now();
+                localStorage.setItem(DEVICE_ID_KEY, id);
+            }
+            return id;
+        }
+
+        /** 取得使用者 ID：FB 登入用 uid，否則用 deviceId */
+        function getUserId() {
+            if (auth && auth.currentUser) return auth.currentUser.uid;
+            return getDeviceId();
+        }
+
+        async function getTransactions() {
+            let localList = [];
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
-                return raw ? JSON.parse(raw) : [];
-            } catch (e) { return []; }
+                localList = raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                showDataLoadError();
+                return [];
+            }
+            if (!db) return localList;
+            try {
+                const userId = getUserId();
+                const doc = await db.collection('users').doc(userId).get();
+                if (doc.exists && doc.data().transactions) {
+                    const remoteList = doc.data().transactions;
+                    if (Array.isArray(remoteList) && remoteList.length > 0) {
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteList));
+                        return remoteList;
+                    }
+                }
+            } catch (e) {
+                console.warn('Firestore 讀取失敗，使用 localStorage', e);
+                showDataLoadError();
+            }
+            return localList;
         }
 
-        function saveTransactions(tx) {
+        async function saveTransactions(tx) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(tx));
+            if (!db) return;
+            try {
+                const userId = getUserId();
+                const docRef = db.collection('users').doc(userId);
+                const existing = await docRef.get();
+                const updateData = {
+                    transactions: tx,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+                if (auth && auth.currentUser) {
+                    updateData.fbDisplayName = auth.currentUser.displayName || '';
+                    if (existing.exists && existing.data().nickname) updateData.nickname = existing.data().nickname;
+                }
+                await docRef.set(updateData, { merge: true });
+                console.log('Firestore 寫入成功');
+                hideDataLoadError();
+            } catch (e) {
+                console.warn('Firestore 寫入失敗', e);
+                showDataLoadError();
+            }
         }
 
-        function recordTransaction() {
+        async function recordTransaction() {
             if (!lastCo2) return;
             const tx = {
                 date: new Date().toISOString().slice(0, 10),
@@ -636,15 +790,19 @@
                 weight: getWeight(),
                 co2: lastCo2
             };
-            const list = getTransactions();
+            const list = await getTransactions();
             list.unshift(tx);
-            saveTransactions(list);
+            await saveTransactions(list);
+            console.log('已記錄', lastCo2, 'kg');
 
             const totalBefore = list.slice(1).reduce((s, x) => s + x.co2, 0);
             const totalAfter = totalBefore + lastCo2;
 
             playRecordAnimation(lastCo2, totalBefore, totalAfter);
-            renderContribution();
+            await renderContribution();
+            setTimeout(() => {
+                document.getElementById('sectionContribution')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 2500);
         }
 
         function playRecordAnimation(co2, totalBefore, totalAfter) {
@@ -755,30 +913,33 @@
         function demoPlayTreeAlive() {
             playTreeAliveAnimation(1);
         }
-        function demoShowBadge() {
-            const list = getTransactions();
+        async function demoShowBadge() {
+            const list = await getTransactions();
             const hasEnough = list.reduce((s, x) => s + x.co2, 0) >= CO2_PER_TREE_LIFE;
             if (!hasEnough) {
                 const demo = { date: new Date().toISOString().slice(0, 10), category: 'other', categoryLabel: '其他', weight: 834, co2: 1000 };
                 list.unshift(demo);
-                saveTransactions(list);
+                await saveTransactions(list);
             }
-            showPanel('contribution');
-            renderContribution();
+            await renderContribution();
+            document.getElementById('sectionContribution')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
-        function renderContribution() {
-            const list = getTransactions();
+        async function renderContribution() {
+            const list = await getTransactions();
             const empty = document.getElementById('contributionEmpty');
             const content = document.getElementById('contributionContent');
 
+            const txSection = document.getElementById('sectionTxRecords');
             if (list.length === 0) {
                 empty.style.display = 'block';
                 content.style.display = 'none';
+                if (txSection) txSection.style.display = 'none';
                 return;
             }
             empty.style.display = 'none';
             content.style.display = 'block';
+            if (txSection) txSection.style.display = 'block';
 
             const total = list.reduce((s, x) => s + x.co2, 0);
             const treesYear = (total / CO2_PER_TREE_YEAR).toFixed(1);
@@ -824,37 +985,75 @@
             `).join('');
         }
 
+        async function loginWithFacebook() {
+            if (!auth) { alert('Firebase 未初始化'); return; }
+            try {
+                const provider = new firebase.auth.FacebookAuthProvider();
+                await auth.signInWithPopup(provider);
+            } catch (e) {
+                console.warn('FB 登入失敗', e);
+                alert('FB 登入失敗，請確認 Firebase 已啟用 Facebook 登入，且網域已加入授權清單。');
+            }
+        }
+        async function logout() {
+            if (auth) await auth.signOut();
+        }
+
+        async function getNicknameFromFirestore() {
+            if (!db || !auth?.currentUser) return '';
+            try {
+                const doc = await db.collection('users').doc(auth.currentUser.uid).get();
+                return (doc.exists && doc.data().nickname) ? doc.data().nickname : '';
+            } catch (e) { return ''; }
+        }
         function getNickname() {
             return localStorage.getItem(NICKNAME_KEY) || '';
         }
-        function saveNickname() {
+        async function saveNickname() {
             const input = document.getElementById('nicknameInput');
-            if (input) {
-                const name = (input.value || '').trim();
-                localStorage.setItem(NICKNAME_KEY, name);
-                updateGreeting();
+            if (!input) return;
+            const name = (input.value || '').trim();
+            localStorage.setItem(NICKNAME_KEY, name);
+            if (db && auth?.currentUser) {
+                try {
+                    await db.collection('users').doc(auth.currentUser.uid).set({
+                        nickname: name,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    }, { merge: true });
+                } catch (e) { console.warn('暱稱寫入 Firestore 失敗', e); }
             }
+            await updateGreeting();
         }
-        function updateGreeting() {
+        async function updateGreeting() {
             const greeting = document.getElementById('greeting');
             const input = document.getElementById('nicknameInput');
-            const name = getNickname();
-            if (greeting) {
-                greeting.textContent = name ? `${name}，這是你的貢獻！` : '環保夥伴，這是你的貢獻！';
+            let displayName = '環保夥伴';
+            let inputVal = '';
+            if (auth?.currentUser) {
+                const nickname = await getNicknameFromFirestore();
+                inputVal = nickname || localStorage.getItem(NICKNAME_KEY) || '';
+                displayName = nickname || auth.currentUser.displayName || '環保夥伴';
+            } else {
+                inputVal = localStorage.getItem(NICKNAME_KEY) || '';
+                displayName = inputVal || '環保夥伴';
             }
-            if (input) input.value = name;
+            if (greeting) greeting.textContent = `${displayName}，這是你的貢獻！`;
+            if (input) {
+                input.value = inputVal;
+                input.placeholder = inputVal ? '換暱稱？' : '輸入暱稱（選填，優先於 FB 名稱顯示）';
+            }
         }
 
-        function showPanel(id) {
-            document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
-            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-            document.querySelector(`.nav-tabs button[data-panel="${id}"]`).classList.add('active');
-            document.getElementById(id === 'calc' ? 'panelCalc' : 'panelContribution').classList.add('active');
-            if (id === 'contribution') renderContribution();
+        function updateAuthUI(user) {
+            const btnFb = document.getElementById('btnFbLogin');
+            const btnOut = document.getElementById('btnLogout');
+            if (btnFb) btnFb.style.display = user ? 'none' : 'inline-block';
+            if (btnOut) btnOut.style.display = user ? 'inline-block' : 'none';
         }
 
-        function exportBackup() {
-            const data = { transactions: getTransactions(), exported: new Date().toISOString() };
+        async function exportBackup() {
+            const list = await getTransactions();
+            const data = { transactions: list, exported: new Date().toISOString() };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
@@ -867,13 +1066,13 @@
             const f = ev.target.files[0];
             if (!f) return;
             const r = new FileReader();
-            r.onload = () => {
+            r.onload = async () => {
                 try {
                     const data = JSON.parse(r.result);
                     const tx = data.transactions || (Array.isArray(data) ? data : []);
                     if (tx.length) {
-                        saveTransactions(tx);
-                        renderContribution();
+                        await saveTransactions(tx);
+                        await renderContribution();
                         alert('已還原 ' + tx.length + ' 筆紀錄');
                     } else alert('備份檔無有效紀錄');
                 } catch (e) { alert('無法讀取備份檔'); }
@@ -882,8 +1081,18 @@
             ev.target.value = '';
         }
 
-        updateGreeting();
-        renderContribution();
+        auth?.onAuthStateChanged(async (user) => {
+            updateAuthUI(user);
+            localStorage.removeItem(STORAGE_KEY);
+            await updateGreeting();
+            await renderContribution();
+        });
+
+        (async function init() {
+            updateAuthUI(auth?.currentUser || null);
+            await updateGreeting();
+            await renderContribution();
+        })();
     </script>
 </body>
 </html>
