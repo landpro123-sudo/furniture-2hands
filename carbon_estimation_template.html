@@ -232,6 +232,10 @@
             padding-top: 12px;
             border-top: 1px solid #e5e7eb;
         }
+        .note-backup {
+            font-size: 0.9rem;
+            color: #4b5563;
+        }
 
         /* 公式說明 */
         .formula-box {
@@ -625,7 +629,7 @@
                 <button onclick="document.getElementById('importFile').click()">匯入還原</button>
                 <input type="file" id="importFile" accept=".json" onchange="importBackup(event)">
             </div>
-            <p class="note" style="margin-top:12px;margin-bottom:0">（建議定期「匯出備份」保存紀錄，換裝置或資料遺失時用「匯入還原」自行還原）</p>
+            <p class="note note-backup" style="margin-top:12px;margin-bottom:0;padding-top:12px;border-top:1px solid #e5e7eb">（建議定期「匯出備份」保存紀錄，換裝置或資料遺失時用「匯入還原」自行還原）</p>
         </section>
 
         <!-- 四、家具類別預設重量與估算減碳重量對照表 -->
@@ -651,11 +655,12 @@
                         <tr><td>書櫃</td><td class="num">30</td><td class="num">1.2</td><td class="num">36</td></tr>
                         <tr><td>餐桌</td><td class="num">30</td><td class="num">1.2</td><td class="num">36</td></tr>
                         <tr><td>梳妝台</td><td class="num">35</td><td class="num">1.2</td><td class="num">42</td></tr>
-                        <tr><td>其他</td><td class="num">20</td><td class="num">1.2</td><td class="num">24</td></tr>
+                        <tr><td>其他<sup>*</sup></td><td class="num">20</td><td class="num">1.2</td><td class="num">24</td></tr>
                     </tbody>
                 </table>
             </div>
             <p class="note">排放係數參考：木製家具約 1.0～1.5 kg CO₂e/kg（研究文獻）。本表採用 1.2 作為保守估計。</p>
+            <p class="note" style="margin-top:8px"><sup>*</sup>其他：實際流通時，可能會有鞋櫃、電視櫃、置物架、嬰兒床、嬰兒推車、辦公椅、吧台椅、其他未列出的家具等，可選此類別並視需要自填重量。</p>
         </section>
     </div>
 
