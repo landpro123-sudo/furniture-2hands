@@ -486,6 +486,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <!-- Facebook SDK（僅用於取得 accessToken，只請求 public_profile） -->
+    <script async defer crossorigin="anonymous" src="https://connect.facebook.net/zh_TW/sdk.js"></script>
 </head>
 <body>
     <div class="container">
@@ -627,6 +629,9 @@
     </div>
 
     <script>
+        // Facebook App ID（與 Firebase 使用的相同）
+        const FB_APP_ID = '916430171154337';
+
         // Firebase 設定（請替換為您的專案 firebaseConfig）
         const firebaseConfig = {
             apiKey: "AIzaSyBZazLViznmDt67cJfwxQ7Humop8k2tJgg",
@@ -646,6 +651,13 @@
         } catch (e) {
             console.warn('Firebase 初始化失敗，使用 localStorage', e);
         }
+
+        // Facebook SDK 初始化（只請求 public_profile，不含 email）
+        window.fbAsyncInit = function() {
+            if (typeof FB !== 'undefined') {
+                FB.init({ appId: FB_APP_ID, cookie: true, xfbml: true, version: 'v18.0' });
+            }
+        };
 
         const EMISSION_FACTOR = 1.2;
         const CO2_PER_TREE_YEAR = 20;   // 一棵樹一年吸收量
@@ -990,15 +1002,26 @@
         async function loginWithFacebook() {
             if (!auth) { alert('Firebase 未初始化'); return; }
             if (auth.currentUser) return;
+            if (typeof FB === 'undefined') {
+                alert('Facebook 登入尚未載入，請稍候再試。');
+                return;
+            }
             try {
+                const token = await new Promise((resolve, reject) => {
+                    FB.login(function(res) {
+                        if (res.authResponse && res.authResponse.accessToken) resolve(res.authResponse.accessToken);
+                        else reject(new Error(res.status === 'unknown' ? '用戶取消' : 'FB 登入失敗'));
+                    }, { scope: 'public_profile' });
+                });
                 sessionStorage.setItem('justLoggedIn', '1');
-                const provider = new firebase.auth.FacebookAuthProvider();
-                provider.setCustomParameters({ scope: 'public_profile' });
-                await auth.signInWithPopup(provider);
+                const credential = firebase.auth.FacebookAuthProvider.credential(token);
+                await auth.signInWithCredential(credential);
             } catch (e) {
                 sessionStorage.removeItem('justLoggedIn');
-                console.warn('FB 登入失敗', e);
-                alert('FB 登入失敗，請確認 Firebase 已啟用 Facebook 登入，且網域已加入授權清單。');
+                if (e.message !== '用戶取消') {
+                    console.warn('FB 登入失敗', e);
+                    alert('FB 登入失敗，請確認 Firebase 已啟用 Facebook 登入，且網域已加入授權清單。');
+                }
             }
         }
         async function logout() {
