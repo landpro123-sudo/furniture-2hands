@@ -311,7 +311,8 @@
             border-radius: 10px;
             transition: width 0.3s ease;
         }
-        .progress-text { font-size: 0.9rem; color: #6b7280; margin-top: 6px; }
+        .progress-text { font-size: 0.95rem; color: #6b7280; margin-top: 6px; }
+        .progress-text .progress-kg { font-weight: 700; color: var(--green-600); font-size: 1.1em; }
 
         .btn-group { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
         .btn-group button {
@@ -345,7 +346,8 @@
         .auth-block.auth-block-login { flex: 2; max-width: 65%; }
         .auth-block.auth-block-group { flex: 1; display: flex; align-items: center; justify-content: center; }
         .auth-zone .fb-login-notice {
-            font-size: 0.9rem;
+            font-size: 1rem;
+            font-weight: 600;
             color: #1e40af;
             margin: 0;
             line-height: 1.5;
@@ -370,24 +372,18 @@
         }
         .btn-fb-login:active { transform: translateY(0); }
         .btn-back-group {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            padding: 10px 18px;
-            background: transparent;
+            display: inline;
             color: #1e40af;
-            border: 2px solid #1877f2;
-            border-radius: 10px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
             font-family: inherit;
             text-decoration: none;
-            transition: background 0.15s, color 0.15s;
+            transition: color 0.15s;
         }
         .btn-back-group:hover {
-            background: #1877f2;
-            color: white;
+            color: #0d65d9;
+            text-decoration: underline;
         }
         @media (max-width: 560px) {
             .auth-block.auth-block-login { max-width: none; }
@@ -591,8 +587,7 @@
                 <div class="progress-bar-wrap">
                     <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
                 </div>
-                <div class="progress-text" id="progressText">再 20 kg，相當於多養一棵樹一年</div>
-                <p class="note" style="margin-top:12px;margin-bottom:0">往下拉可查看流通記錄、匯出備份。</p>
+                <div class="progress-text" id="progressText">再 <span class="progress-kg">20</span> kg，相當於多養一棵樹一年</div>
             </div>
         </section>
 
@@ -625,6 +620,7 @@
                 </table>
             </div>
             <div class="btn-group">
+                <button onclick="exportFurnitureTable()">匯出家具表</button>
                 <button onclick="exportBackup()">匯出備份</button>
                 <button onclick="document.getElementById('importFile').click()">匯入還原</button>
                 <input type="file" id="importFile" accept=".json" onchange="importBackup(event)">
@@ -840,6 +836,21 @@
             return getDeviceId();
         }
 
+        /** 壓縮單筆：[d,c,l,w,k] 省鍵名與日期格式，供 Firestore 最小儲存 */
+        function compactTx(t) {
+            const d = (t.date || '').replace(/-/g, '');
+            return [d, t.category || '', t.categoryLabel || '', t.weight || 0, t.co2 || 0];
+        }
+        function expandTx(a) {
+            if (!Array.isArray(a) || a.length < 5) return null;
+            const d = a[0];
+            const date = d.length === 8 ? `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}` : d;
+            return { date, category: a[1], categoryLabel: a[2], weight: a[3], co2: a[4] };
+        }
+        function isCompactFormat(list) {
+            return Array.isArray(list) && list.length > 0 && Array.isArray(list[0]);
+        }
+
         async function getTransactions() {
             let localList = [];
             try {
@@ -854,7 +865,10 @@
                 const userId = getUserId();
                 const doc = await db.collection('users').doc(userId).get();
                 if (doc.exists && doc.data().transactions) {
-                    const remoteList = doc.data().transactions;
+                    let remoteList = doc.data().transactions;
+                    if (isCompactFormat(remoteList)) {
+                        remoteList = remoteList.map(expandTx).filter(Boolean);
+                    }
                     if (Array.isArray(remoteList) && remoteList.length > 0) {
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(remoteList));
                         return remoteList;
@@ -874,8 +888,9 @@
                 const userId = getUserId();
                 const docRef = db.collection('users').doc(userId);
                 const existing = await docRef.get();
+                const txCompact = tx.map(compactTx);
                 const updateData = {
-                    transactions: tx,
+                    transactions: txCompact,
                     updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                 };
                 if (auth && auth.currentUser) {
@@ -1087,10 +1102,11 @@
             treesLifeDisp.className = 'tree-display' + (treesLife > 10 ? ' many' : '') + (treesLife > 20 ? ' lots' : '');
             treesLifeCnt.textContent = treesLife > 0 ? `${treesLife} 棵` : '0 棵';
             document.getElementById('progressFill').style.width = pct + '%';
-            document.getElementById('progressText').textContent =
+            const kgVal = remain.toFixed(0);
+            document.getElementById('progressText').innerHTML =
                 remain < 2
                     ? '就差一點！相當於多養一棵樹一年 🌿'
-                    : `再 ${remain.toFixed(0)} kg，相當於多養一棵樹一年`;
+                    : `再 <span class="progress-kg">${kgVal}</span> kg，相當於多養一棵樹一年`;
 
             const tbody = document.getElementById('txList');
             tbody.innerHTML = list.map(x => `
@@ -1219,6 +1235,23 @@
             const notice = document.getElementById('fbLoginNotice');
             if (btnFb) btnFb.style.display = user ? 'none' : 'inline-block';
             if (notice) notice.textContent = user ? '① 已登入，可跨裝置同步您的貢獻。' : '① 登入後才能累積每次二手家具交流後的減碳量，並可跨裝置同步您的貢獻。';
+        }
+
+        async function exportFurnitureTable() {
+            const list = await getTransactions();
+            const total = list.reduce((s, x) => s + x.co2, 0);
+            const rows = [
+                ['序號', '日期', '類別', '減碳(kg)'],
+                ...list.map((x, i) => [i + 1, x.date, x.categoryLabel || x.category || '', x.co2])
+            ];
+            const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
+            const totalRow = `\n\n"","","總計(kg)",${total}`;
+            const blob = new Blob(['\ufeff' + csv + totalRow], { type: 'text/csv;charset=utf-8' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = '家具流通減碳表_' + new Date().toISOString().slice(0, 10) + '.csv';
+            a.click();
+            URL.revokeObjectURL(a.href);
         }
 
         async function exportBackup() {
