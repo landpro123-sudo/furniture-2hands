@@ -299,33 +299,37 @@
         .empty-state { text-align: center; padding: 32px; color: #9ca3af; }
         #importFile { display: none; }
 
-        /* FB 登入區：顯眼加強 */
+        /* FB 登入區：雙區塊 */
         .auth-zone {
             margin-bottom: 20px;
-            padding: 20px;
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .auth-block {
+            flex: 1;
+            min-width: 200px;
+            padding: 16px 20px;
             background: linear-gradient(135deg, #e8f4fd 0%, #dbeafe 100%);
             border: 2px solid #1877f2;
             border-radius: var(--radius);
         }
+        .auth-block.auth-block-login { flex: 2; max-width: 65%; }
+        .auth-block.auth-block-group { flex: 1; display: flex; align-items: center; justify-content: center; }
         .auth-zone .fb-login-notice {
             font-size: 0.9rem;
             color: #1e40af;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             line-height: 1.5;
         }
-        .auth-zone .auth-buttons {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
+        .auth-zone .auth-buttons { margin-top: 8px; }
         .btn-fb-login {
-            padding: 14px 28px;
+            padding: 12px 24px;
             background: linear-gradient(135deg, #1877f2 0%, #0d65d9 100%);
             color: white;
             border: none;
             border-radius: 10px;
-            font-size: 1.05rem;
+            font-size: 1rem;
             font-weight: 700;
             cursor: pointer;
             font-family: inherit;
@@ -337,17 +341,29 @@
             box-shadow: 0 6px 20px rgba(24, 119, 242, 0.5);
         }
         .btn-fb-login:active { transform: translateY(0); }
-        .btn-logout {
-            padding: 10px 20px;
-            background: #e5e7eb;
-            color: #4b5563;
-            border: none;
-            border-radius: 8px;
-            font-size: 0.95rem;
+        .btn-back-group {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 20px;
+            background: transparent;
+            color: #1e40af;
+            border: 2px solid #1877f2;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
             cursor: pointer;
             font-family: inherit;
+            text-decoration: none;
+            transition: background 0.15s, color 0.15s;
         }
-        .btn-logout:hover { background: #d1d5db; }
+        .btn-back-group:hover {
+            background: #1877f2;
+            color: white;
+        }
+        @media (max-width: 560px) {
+            .auth-block.auth-block-login { max-width: none; }
+        }
 
         /* 暱稱區 */
         .nickname-row {
@@ -364,6 +380,9 @@
             font-size: 1rem;
             width: 160px;
         }
+        .nickname-row input.nickname-saved { color: #9ca3af; }
+        .nickname-row input.nickname-saved:focus { color: #1f2937; }
+        .nickname-saved-msg { font-size: 0.85rem; color: var(--green-600); margin-left: 8px; }
         .nickname-row .greeting {
             font-size: 1.15rem;
             color: var(--green-800);
@@ -505,15 +524,20 @@
                 <br><button class="retry-btn" onclick="hideDataLoadError(); renderContribution();">重試</button>
             </div>
             <div id="authZone" class="auth-zone">
-                <p class="fb-login-notice">📌 登入後才能累積每次二手家具交流後的減碳量，並可跨裝置同步您的貢獻。</p>
-                <div class="auth-buttons">
-                    <button id="btnFbLogin" class="btn-fb-login" onclick="loginWithFacebook()">🔵 用 Facebook 登入</button>
-                    <button id="btnLogout" class="btn-logout" onclick="logout()" style="display:none">登出</button>
+                <div class="auth-block auth-block-login">
+                    <p id="fbLoginNotice" class="fb-login-notice">📌 登入後才能累積每次二手家具交流後的減碳量，並可跨裝置同步您的貢獻。</p>
+                    <div class="auth-buttons">
+                        <button id="btnFbLogin" class="btn-fb-login" onclick="loginWithFacebook()">🔵 用 Facebook 登入</button>
+                    </div>
+                </div>
+                <div class="auth-block auth-block-group">
+                    <a href="https://www.facebook.com/groups/1423628648822655" class="btn-back-group" target="_blank" rel="noopener">返回社團</a>
                 </div>
             </div>
             <div class="nickname-row">
                 <span class="greeting" id="greeting">環保夥伴，這是你的貢獻！</span>
-                <input type="text" id="nicknameInput" placeholder="輸入暱稱（選填，優先於 FB 名稱顯示）" maxlength="20" onblur="saveNickname()" onkeydown="if(event.key==='Enter'){saveNickname();this.blur()}">
+                <input type="text" id="nicknameInput" placeholder="輸入暱稱（選填，按 Enter 或點擊他處儲存）" maxlength="20" onblur="saveNickname()" onfocus="nicknameInputFocus()" onkeydown="if(event.key==='Enter'){saveNickname();this.blur()}">
+                <span id="nicknameSavedMsg" class="nickname-saved-msg" style="display:none">已儲存</span>
             </div>
             <p id="welcomeMsg" class="welcome-msg" style="display:none;margin-top:0;margin-bottom:12px;color:var(--green-700);font-weight:500;"></p>
             <div id="contributionEmpty" class="empty-state">
@@ -1041,6 +1065,10 @@
         function getNickname() {
             return localStorage.getItem(NICKNAME_KEY) || '';
         }
+        function nicknameInputFocus() {
+            const input = document.getElementById('nicknameInput');
+            if (input) input.classList.remove('nickname-saved');
+        }
         async function saveNickname() {
             const input = document.getElementById('nicknameInput');
             if (!input) return;
@@ -1055,6 +1083,12 @@
                 } catch (e) { console.warn('暱稱寫入 Firestore 失敗', e); }
             }
             await updateGreeting();
+            input.classList.add('nickname-saved');
+            const msg = document.getElementById('nicknameSavedMsg');
+            if (msg) {
+                msg.style.display = 'inline';
+                setTimeout(() => { msg.style.display = 'none'; }, 2000);
+            }
         }
         async function updateGreeting(user) {
             const u = user || auth?.currentUser;
@@ -1074,7 +1108,8 @@
             if (greeting) greeting.textContent = `${displayName}，這是你的貢獻！`;
             if (input) {
                 input.value = inputVal;
-                input.placeholder = inputVal ? '換暱稱？' : '輸入暱稱（選填，優先於 FB 名稱顯示）';
+                input.placeholder = inputVal ? '換暱稱？按 Enter 或點擊他處儲存' : '輸入暱稱（選填，按 Enter 或點擊他處儲存）';
+                input.classList.toggle('nickname-saved', !!inputVal);
             }
         }
 
@@ -1106,9 +1141,9 @@
 
         function updateAuthUI(user) {
             const btnFb = document.getElementById('btnFbLogin');
-            const btnOut = document.getElementById('btnLogout');
+            const notice = document.getElementById('fbLoginNotice');
             if (btnFb) btnFb.style.display = user ? 'none' : 'inline-block';
-            if (btnOut) btnOut.style.display = user ? 'inline-block' : 'none';
+            if (notice) notice.textContent = user ? '✓ 已登入，可跨裝置同步您的貢獻。' : '📌 登入後才能累積每次二手家具交流後的減碳量，並可跨裝置同步您的貢獻。';
         }
 
         async function exportBackup() {
