@@ -993,6 +993,7 @@
             try {
                 sessionStorage.setItem('justLoggedIn', '1');
                 const provider = new firebase.auth.FacebookAuthProvider();
+                provider.setCustomParameters({ scope: 'public_profile' });
                 await auth.signInWithPopup(provider);
             } catch (e) {
                 sessionStorage.removeItem('justLoggedIn');
@@ -1038,7 +1039,8 @@
             if (u) {
                 const nickname = await getNicknameFromFirestore();
                 inputVal = nickname || localStorage.getItem(NICKNAME_KEY) || '';
-                displayName = nickname || u.displayName || '環保夥伴';
+                const fbProvider = u.providerData?.find(p => p.providerId === 'facebook.com');
+                displayName = nickname || u.displayName || (fbProvider?.displayName) || '環保夥伴';
             } else {
                 inputVal = localStorage.getItem(NICKNAME_KEY) || '';
                 displayName = inputVal || '環保夥伴';
