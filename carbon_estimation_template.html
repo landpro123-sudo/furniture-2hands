@@ -327,7 +327,7 @@
         .empty-state { text-align: center; padding: 32px; color: #9ca3af; }
         #importFile { display: none; }
 
-        /* FB 登入區：雙區塊 */
+        /* FB 登入區：雙區塊（參考對照表 ① ② 設計，高度較窄） */
         .auth-zone {
             margin-bottom: 20px;
             display: flex;
@@ -337,22 +337,22 @@
         .auth-block {
             flex: 1;
             min-width: 200px;
-            padding: 16px 20px;
+            padding: 10px 16px;
             background: linear-gradient(135deg, #e8f4fd 0%, #dbeafe 100%);
             border: 2px solid #1877f2;
-            border-radius: var(--radius);
+            border-radius: 8px;
         }
         .auth-block.auth-block-login { flex: 2; max-width: 65%; }
         .auth-block.auth-block-group { flex: 1; display: flex; align-items: center; justify-content: center; }
         .auth-zone .fb-login-notice {
             font-size: 0.9rem;
             color: #1e40af;
-            margin-bottom: 10px;
+            margin: 0;
             line-height: 1.5;
         }
-        .auth-zone .auth-buttons { margin-top: 8px; }
+        .auth-zone .auth-buttons { margin-top: 6px; }
         .btn-fb-login {
-            padding: 12px 24px;
+            padding: 10px 20px;
             background: linear-gradient(135deg, #1877f2 0%, #0d65d9 100%);
             color: white;
             border: none;
@@ -373,7 +373,7 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 12px 20px;
+            padding: 10px 18px;
             background: transparent;
             color: #1e40af;
             border: 2px solid #1877f2;
@@ -553,13 +553,13 @@
             </div>
             <div id="authZone" class="auth-zone">
                 <div class="auth-block auth-block-login">
-                    <p id="fbLoginNotice" class="fb-login-notice">📌 登入後才能累積每次二手家具交流後的減碳量，並可跨裝置同步您的貢獻。</p>
+                    <p id="fbLoginNotice" class="fb-login-notice">① 登入後才能累積每次二手家具交流後的減碳量，並可跨裝置同步您的貢獻。</p>
                     <div class="auth-buttons">
                         <button id="btnFbLogin" class="btn-fb-login" onclick="loginWithFacebook()">🔵 用 Facebook 登入</button>
                     </div>
                 </div>
                 <div class="auth-block auth-block-group">
-                    <a href="https://www.facebook.com/groups/1423628648822655" class="btn-back-group" target="_blank" rel="noopener">返回社團</a>
+                    <a href="https://www.facebook.com/groups/1423628648822655" class="btn-back-group" target="_blank" rel="noopener">② 返回社團</a>
                 </div>
             </div>
             <div class="nickname-row">
@@ -1218,7 +1218,7 @@
             const btnFb = document.getElementById('btnFbLogin');
             const notice = document.getElementById('fbLoginNotice');
             if (btnFb) btnFb.style.display = user ? 'none' : 'inline-block';
-            if (notice) notice.textContent = user ? '✓ 已登入，可跨裝置同步您的貢獻。' : '📌 登入後才能累積每次二手家具交流後的減碳量，並可跨裝置同步您的貢獻。';
+            if (notice) notice.textContent = user ? '① 已登入，可跨裝置同步您的貢獻。' : '① 登入後才能累積每次二手家具交流後的減碳量，並可跨裝置同步您的貢獻。';
         }
 
         async function exportBackup() {
