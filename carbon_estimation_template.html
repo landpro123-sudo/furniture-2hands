@@ -1,0 +1,889 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>家具流通減碳估算與記錄 | 環保貢獻視覺化</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --green-50: #f0fdf4;
+            --green-100: #dcfce7;
+            --green-200: #bbf7d0;
+            --green-300: #86efac;
+            --green-400: #4ade80;
+            --green-500: #22c55e;
+            --green-600: #16a34a;
+            --green-700: #15803d;
+            --green-800: #166534;
+            --green-900: #14532d;
+            --earth-50: #faf5f0;
+            --earth-100: #f5ebe0;
+            --earth-200: #e8d5c4;
+            --earth-300: #d4b896;
+            --earth-400: #c19a6b;
+            --earth-500: #a67c52;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
+            --radius: 12px;
+            --radius-lg: 16px;
+        }
+
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+            margin: 0;
+            padding: 24px;
+            background: linear-gradient(135deg, var(--green-50) 0%, var(--earth-50) 50%, var(--green-100) 100%);
+            min-height: 100vh;
+            color: #1f2937;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* 標題區 */
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+            padding: 24px;
+        }
+        .header h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--green-800);
+            margin: 0 0 8px 0;
+            letter-spacing: 0.02em;
+        }
+        .header .subtitle {
+            font-size: 0.95rem;
+            color: #6b7280;
+            font-weight: 400;
+        }
+        .header .leaf-icon {
+            font-size: 2.5rem;
+            margin-bottom: 8px;
+        }
+
+        /* 卡片 */
+        .card {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 24px;
+            margin-bottom: 20px;
+        }
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--green-800);
+            margin: 0 0 16px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--green-200);
+        }
+
+        /* 計算區 */
+        .calc-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+        }
+        @media (max-width: 600px) {
+            .calc-grid { grid-template-columns: 1fr; }
+        }
+        .field-group label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: #4b5563;
+            margin-bottom: 6px;
+        }
+        .field-group select,
+        .field-group input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .field-group select:focus,
+        .field-group input:focus {
+            outline: none;
+            border-color: var(--green-500);
+            box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15);
+        }
+
+        .btn-calc {
+            grid-column: 1 / -1;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--green-600) 0%, var(--green-700) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .btn-calc:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* 結果區 */
+        .result-box {
+            background: linear-gradient(135deg, var(--green-50) 0%, var(--green-100) 100%);
+            border: 2px solid var(--green-200);
+            border-radius: var(--radius);
+            padding: 24px;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .result-box.hidden { display: none; }
+        .result-main {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--green-800);
+            margin-bottom: 4px;
+        }
+        .result-main span { font-size: 1.25rem; font-weight: 500; color: #6b7280; }
+        .result-desc {
+            font-size: 0.9rem;
+            color: #4b5563;
+            margin-top: 12px;
+        }
+        .result-equivalents {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 12px;
+            margin-top: 16px;
+        }
+        .equiv-badge {
+            background: white;
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            color: var(--green-700);
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* 類別對照表 */
+        .table-wrap {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        th {
+            background: var(--green-50);
+            color: var(--green-800);
+            font-weight: 600;
+        }
+        tr:hover { background: var(--green-50); }
+        .num { text-align: right; font-variant-numeric: tabular-nums; }
+        .note {
+            font-size: 0.8rem;
+            color: #6b7280;
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        /* 公式說明 */
+        .formula-box {
+            background: #f9fafb;
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'Consolas', monospace;
+            font-size: 0.9rem;
+            color: #374151;
+        }
+
+        /* 記錄按鈕 */
+        .btn-record {
+            margin-top: 16px;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--green-500) 0%, var(--green-600) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: transform 0.15s;
+        }
+        .btn-record:hover { transform: translateY(-1px); }
+        .btn-record:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        /* 動畫：葉子淡入縮放 */
+        @keyframes leafPop {
+            0% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1.1); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .anim-leaf {
+            animation: leafPop 0.5s ease-out;
+        }
+        .anim-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(255,255,255,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            animation: fadeOut 0.6s ease-out 1.5s forwards;
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; pointer-events: none; }
+        }
+        .anim-tree-small {
+            font-size: 4rem;
+            animation: leafPop 0.6s ease-out;
+        }
+        /* 樹活過來：灰→綠 */
+        @keyframes treeAlive {
+            0% { filter: grayscale(1); transform: scale(0.8); opacity: 0.8; }
+            50% { transform: scale(1.05); }
+            100% { filter: grayscale(0); transform: scale(1); opacity: 1; }
+        }
+        .anim-tree-milestone {
+            animation: treeAlive 1.5s ease-out;
+        }
+        .tree-svg { width: 120px; height: 120px; }
+
+        /* 進度條 */
+        .progress-bar-wrap {
+            margin: 16px 0;
+            background: #e5e7eb;
+            border-radius: 10px;
+            height: 12px;
+            overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--green-500), var(--green-600));
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+        .progress-text { font-size: 0.9rem; color: #6b7280; margin-top: 6px; }
+
+        /* 導航標籤 */
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        .nav-tabs button {
+            padding: 10px 20px;
+            border: none;
+            background: #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .nav-tabs button.active {
+            background: var(--green-600);
+            color: white;
+        }
+        .nav-tabs button:hover:not(.active) { background: #d1d5db; }
+        .panel { display: none; }
+        .panel.active { display: block; }
+        .btn-group { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .btn-group button {
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            border-radius: 6px;
+            border: 1px solid #d1d5db;
+            background: white;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-group button:hover { background: #f9fafb; }
+        .empty-state { text-align: center; padding: 32px; color: #9ca3af; }
+        #importFile { display: none; }
+
+        /* 暱稱區 */
+        .nickname-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .nickname-row input {
+            padding: 8px 12px;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 1rem;
+            width: 160px;
+        }
+        .nickname-row .greeting {
+            font-size: 1.15rem;
+            color: var(--green-800);
+            font-weight: 600;
+        }
+
+        /* 累計成果：更明顯的卡片設計 */
+        .achievement-cards {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        @media (max-width: 500px) {
+            .achievement-cards { grid-template-columns: 1fr; }
+        }
+        .achievement-card {
+            background: linear-gradient(135deg, var(--green-50) 0%, var(--green-100) 100%);
+            border: 2px solid var(--green-300);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            text-align: center;
+        }
+        .achievement-card .icon { font-size: 2.5rem; margin-bottom: 8px; }
+        .achievement-card .value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--green-800);
+        }
+        .achievement-card .tree-display {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 4px;
+            min-height: 2.5rem;
+            margin: 8px 0;
+        }
+        .achievement-card .tree-display span { font-size: 1.8rem; line-height: 1; }
+        .achievement-card .tree-display.many span { font-size: 1.2rem; }
+        .achievement-card .tree-display.lots span { font-size: 0.9rem; }
+        .achievement-card .label {
+            font-size: 0.9rem;
+            color: var(--green-700);
+            margin-top: 4px;
+        }
+
+        /* 勳章（達 1,000 kg 時顯示） */
+        .badge-zone {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .badge-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 2px solid #f59e0b;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #92400e;
+        }
+        .badge-item .badge-icon { font-size: 1.8rem; }
+
+        /* 預覽動畫按鈕 */
+        .demo-btns {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .demo-btn {
+            padding: 10px 20px;
+            background: var(--green-100);
+            border: 2px solid var(--green-400);
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--green-800);
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.15s;
+        }
+        .demo-btn:hover {
+            background: var(--green-200);
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="leaf-icon">🌿</div>
+            <h1>家具流通減碳估算與記錄</h1>
+            <p class="subtitle">延續使用 = 避免製造新品 = 減少碳排 · 您的每一件交流都是對環境的貢獻</p>
+        </header>
+
+        <div class="nav-tabs">
+            <button class="active" data-panel="calc" onclick="showPanel('calc')">減碳試算</button>
+            <button data-panel="contribution" onclick="showPanel('contribution')">我的貢獻</button>
+        </div>
+
+        <section id="panelCalc" class="card panel active">
+            <h2 class="card-title">📊 減碳試算</h2>
+            <div class="calc-grid">
+                <div class="field-group">
+                    <label for="category">家具類別</label>
+                    <select id="category">
+                        <option value="">請選擇</option>
+                        <option value="desk" data-weight="25">書桌</option>
+                        <option value="sofa" data-weight="60">沙發</option>
+                        <option value="wardrobe" data-weight="40">衣櫃</option>
+                        <option value="bed" data-weight="35">床架</option>
+                        <option value="chair" data-weight="8">椅子</option>
+                        <option value="table" data-weight="15">茶几</option>
+                        <option value="bookshelf" data-weight="30">書櫃</option>
+                        <option value="dining_table" data-weight="30">餐桌</option>
+                        <option value="dresser" data-weight="35">梳妝台</option>
+                        <option value="other" data-weight="20">其他</option>
+                    </select>
+                </div>
+                <div class="field-group">
+                    <label for="weight">重量 (kg) — 選填，有填則優先使用</label>
+                    <input type="number" id="weight" placeholder="例：25" min="1" max="500" step="0.5">
+                </div>
+                <button class="btn-calc" onclick="calculate()">計算減碳量</button>
+            </div>
+
+            <div id="resultBox" class="result-box hidden">
+                <div class="result-main">
+                    <span id="co2Value">—</span> kg CO₂e
+                </div>
+                <div class="result-desc">相當於避免製造一件新家具所產生的碳排放</div>
+                <div class="result-equivalents" id="equivalents"></div>
+                <button id="btnRecord" class="btn-record" onclick="recordTransaction()" disabled>記錄這次交易</button>
+            </div>
+            <h2 class="card-title" style="margin-top:24px">📋 家具類別預設重量與估算減碳重量對照表</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>家具類別</th>
+                            <th class="num">預設重量 (kg)</th>
+                            <th class="num">排放係數</th>
+                            <th class="num">估算減碳 (kg CO₂e)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>書桌</td><td class="num">25</td><td class="num">1.2</td><td class="num">30</td></tr>
+                        <tr><td>沙發</td><td class="num">60</td><td class="num">1.2</td><td class="num">72</td></tr>
+                        <tr><td>衣櫃</td><td class="num">40</td><td class="num">1.2</td><td class="num">48</td></tr>
+                        <tr><td>床架</td><td class="num">35</td><td class="num">1.2</td><td class="num">42</td></tr>
+                        <tr><td>椅子</td><td class="num">8</td><td class="num">1.2</td><td class="num">9.6</td></tr>
+                        <tr><td>茶几</td><td class="num">15</td><td class="num">1.2</td><td class="num">18</td></tr>
+                        <tr><td>書櫃</td><td class="num">30</td><td class="num">1.2</td><td class="num">36</td></tr>
+                        <tr><td>餐桌</td><td class="num">30</td><td class="num">1.2</td><td class="num">36</td></tr>
+                        <tr><td>梳妝台</td><td class="num">35</td><td class="num">1.2</td><td class="num">42</td></tr>
+                        <tr><td>其他</td><td class="num">20</td><td class="num">1.2</td><td class="num">24</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="note">排放係數參考：木製家具約 1.0～1.5 kg CO₂e/kg（研究文獻）。本表採用 1.2 作為保守估計。</p>
+        </section>
+
+        <section id="panelContribution" class="card panel">
+            <h2 class="card-title">🌳 我的貢獻</h2>
+            <div class="nickname-row">
+                <span class="greeting" id="greeting">環保夥伴，這是你的貢獻！</span>
+                <input type="text" id="nicknameInput" placeholder="輸入暱稱（選填）" maxlength="20" onblur="saveNickname()" onkeydown="if(event.key==='Enter'){saveNickname();this.blur()}">
+            </div>
+            <div id="contributionEmpty" class="empty-state">
+                尚無交易記錄。完成減碳試算後，點「記錄這次交易」即可累積您的貢獻。
+            </div>
+            <div id="contributionContent" style="display:none">
+                <div class="result-main" style="margin-bottom:16px">
+                    累計 <span id="totalCo2">0</span> kg CO₂e
+                </div>
+                <div class="badge-zone" id="badgeZone" style="display:none"></div>
+                <div class="achievement-cards">
+                    <div class="achievement-card">
+                        <div class="label">棵樹一年吸收量</div>
+                        <div class="tree-display" id="treesYearDisplay"></div>
+                        <div class="label" id="treesYearCount" style="margin-top:4px">≈ 0 棵</div>
+                    </div>
+                    <div class="achievement-card">
+                        <div class="label">棵樹（百年生命）</div>
+                        <div class="tree-display" id="treesLifeDisplay"></div>
+                        <div class="label" id="treesLifeCount" style="margin-top:4px">0 棵</div>
+                    </div>
+                </div>
+                <div class="progress-bar-wrap">
+                    <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
+                </div>
+                <div class="progress-text" id="progressText">再 20 kg，相當於多養一棵樹一年</div>
+                <h3 style="font-size:1rem;margin:20px 0 12px">交易紀錄</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr><th>日期</th><th>類別</th><th class="num">減碳 (kg)</th></tr></thead>
+                        <tbody id="txList"></tbody>
+                    </table>
+                </div>
+                <div class="btn-group">
+                    <button onclick="exportBackup()">匯出備份</button>
+                    <button onclick="document.getElementById('importFile').click()">匯入還原</button>
+                    <input type="file" id="importFile" accept=".json" onchange="importBackup(event)">
+                </div>
+            </div>
+        </section>
+
+        <section class="card">
+            <h2 class="card-title">📐 計算公式</h2>
+            <div class="formula-box">
+                減碳量 (kg CO₂e) = 家具重量 (kg) × 排放係數 (kg CO₂e / kg)
+            </div>
+            <p class="note">概念：流通延續使用 = 避免製造新家具 = 避免該件家具生命週期中的碳排放。</p>
+        </section>
+    </div>
+
+    <script>
+        const EMISSION_FACTOR = 1.2;
+        const CO2_PER_TREE_YEAR = 20;   // 一棵樹一年吸收量
+        const CO2_PER_20_TREES = 400;   // 20 棵樹一年吸收量
+        const CO2_PER_TREE_LIFE = 1000; // 一棵樹百年生命週期
+        const STORAGE_KEY = 'furniture_transactions';
+        const NICKNAME_KEY = 'furniture_nickname';
+
+        const CATEGORY_LABELS = {
+            desk: '書桌', sofa: '沙發', wardrobe: '衣櫃', bed: '床架',
+            chair: '椅子', table: '茶几', bookshelf: '書櫃',
+            dining_table: '餐桌', dresser: '梳妝台', other: '其他'
+        };
+
+        let lastCo2 = 0;
+        let lastCategory = '';
+
+        function getWeight() {
+            const category = document.getElementById('category');
+            const weightInput = document.getElementById('weight');
+            const customWeight = parseFloat(weightInput.value);
+            if (customWeight && customWeight > 0) return customWeight;
+            const defaultWeight = category.selectedOptions[0]?.dataset?.weight;
+            return defaultWeight ? parseFloat(defaultWeight) : null;
+        }
+
+        function calculate() {
+            const category = document.getElementById('category');
+            if (!category.value) {
+                alert('請先選擇家具類別');
+                return;
+            }
+            const weight = getWeight();
+            if (!weight) {
+                alert('請輸入重量（選填欄位），或確認已選擇家具類別（將使用預設重量）');
+                return;
+            }
+            const co2 = Math.round(weight * EMISSION_FACTOR * 10) / 10;
+            lastCo2 = co2;
+            lastCategory = category.value;
+            showResult(co2);
+            document.getElementById('btnRecord').disabled = false;
+        }
+
+        function showResult(co2) {
+            const box = document.getElementById('resultBox');
+            const valueEl = document.getElementById('co2Value');
+            const equivEl = document.getElementById('equivalents');
+
+            valueEl.textContent = co2;
+            box.classList.remove('hidden');
+
+            const trees = (co2 / CO2_PER_TREE_YEAR).toFixed(1);
+            const km = Math.round(co2 / 0.12);
+            equivEl.innerHTML = `
+                <span class="equiv-badge">≈ ${trees} 棵樹一年吸收量</span>
+                <span class="equiv-badge">≈ 避免 ${km} 公里汽車排放</span>
+            `;
+        }
+
+        function getTransactions() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                return raw ? JSON.parse(raw) : [];
+            } catch (e) { return []; }
+        }
+
+        function saveTransactions(tx) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tx));
+        }
+
+        function recordTransaction() {
+            if (!lastCo2) return;
+            const tx = {
+                date: new Date().toISOString().slice(0, 10),
+                category: lastCategory,
+                categoryLabel: CATEGORY_LABELS[lastCategory] || lastCategory,
+                weight: getWeight(),
+                co2: lastCo2
+            };
+            const list = getTransactions();
+            list.unshift(tx);
+            saveTransactions(list);
+
+            const totalBefore = list.slice(1).reduce((s, x) => s + x.co2, 0);
+            const totalAfter = totalBefore + lastCo2;
+
+            playRecordAnimation(lastCo2, totalBefore, totalAfter);
+            renderContribution();
+        }
+
+        function playRecordAnimation(co2, totalBefore, totalAfter) {
+            const trees = (co2 / CO2_PER_TREE_YEAR).toFixed(1);
+            const overlay = document.createElement('div');
+            overlay.className = 'anim-overlay';
+            overlay.innerHTML = `
+                <div class="anim-leaf" style="text-align:center">
+                    <div style="font-size:4rem;margin-bottom:12px">🌿</div>
+                    <div style="font-size:1.25rem;font-weight:600;color:var(--green-800)">+${co2} kg CO₂e</div>
+                    <div style="font-size:0.95rem;color:#6b7280;margin-top:6px">相當於 ${trees} 棵樹一年吸收量</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => overlay.remove(), 2100);
+
+            const crossedTreeYear = Math.floor(totalAfter / CO2_PER_TREE_YEAR) > Math.floor(totalBefore / CO2_PER_TREE_YEAR);
+            const crossed20Trees = totalAfter >= CO2_PER_20_TREES && totalBefore < CO2_PER_20_TREES;
+            const crossedTreeLife = Math.floor(totalAfter / CO2_PER_TREE_LIFE) > Math.floor(totalBefore / CO2_PER_TREE_LIFE);
+
+            if (crossedTreeLife) {
+                const lifeCount = Math.floor(totalAfter / CO2_PER_TREE_LIFE);
+                setTimeout(() => playTreeAliveAnimation(lifeCount), 2200);
+            } else if (crossed20Trees) {
+                setTimeout(() => playTwentyTreesAnimation(), 2200);
+            } else if (crossedTreeYear) {
+                const count = Math.floor(totalAfter / CO2_PER_TREE_YEAR);
+                setTimeout(() => playSmallTreeAnimation(count), 2200);
+            }
+        }
+
+        function playSmallTreeAnimation(count) {
+            count = count || 1;
+            const trees = '🌳'.repeat(Math.min(count, 20));
+            const size = count > 10 ? '2rem' : count > 5 ? '2.5rem' : '3.5rem';
+            const overlay = document.createElement('div');
+            overlay.className = 'anim-overlay';
+            overlay.innerHTML = `
+                <div class="anim-tree-small" style="text-align:center">
+                    <div style="font-size:${size};line-height:1.2;word-break:break-all;max-width:90vw">${trees}</div>
+                    <div style="font-size:1.1rem;font-weight:600;color:var(--green-800);margin-top:12px">恭喜！相當於 ${count} 棵樹一年吸收量</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => overlay.remove(), 2500);
+        }
+
+        function playTwentyTreesAnimation() {
+            const trees = '🌳'.repeat(20);
+            const overlay = document.createElement('div');
+            overlay.className = 'anim-overlay';
+            overlay.innerHTML = `
+                <div style="text-align:center">
+                    <div class="anim-leaf" style="font-size:1.2rem;line-height:1.3;margin-bottom:12px;display:flex;flex-wrap:wrap;justify-content:center;gap:2px;max-width:90vw">${trees}</div>
+                    <div style="font-size:1.3rem;font-weight:700;color:var(--green-800);margin-top:12px">恭喜！相當於 20 棵樹一年吸收量</div>
+                    <div style="font-size:0.95rem;color:#6b7280;margin-top:8px">你已養活一片小森林 🌲</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => overlay.remove(), 3500);
+        }
+
+        function playTreeAliveAnimation(count) {
+            count = count || 1;
+            const trees = '🌳'.repeat(Math.min(count, 20));
+            const badges = '🏅'.repeat(Math.min(count, 5));
+            const size = count > 10 ? '1.2rem' : count > 5 ? '2rem' : count > 1 ? '2.5rem' : '6rem';
+            const badgeSize = count >= 2 ? '2.5rem' : '';
+            const msg1 = count >= 2
+                ? `恭喜獲得第 ${count} 枚種樹者勳章！`
+                : '恭喜！你相當於種下一棵會活 100 年的樹';
+            const msg2 = count >= 2
+                ? `你相當於種下 ${count} 棵會活 100 年的樹，貢獻會像森林一樣陪伴地球`
+                : '你的貢獻，會像一棵樹一樣陪伴地球很久';
+            const overlay = document.createElement('div');
+            overlay.className = 'anim-overlay';
+            overlay.innerHTML = `
+                <div style="text-align:center">
+                    ${count >= 2 ? `<div class="anim-leaf" style="font-size:2.5rem;margin-bottom:12px">${badges}</div>` : ''}
+                    <div class="anim-tree-milestone" style="font-size:${size};line-height:1.2;display:flex;flex-wrap:wrap;justify-content:center;gap:4px">${trees}</div>
+                    <div style="font-size:1.2rem;font-weight:700;color:var(--green-800);margin-top:16px">${msg1}</div>
+                    <div style="font-size:0.95rem;color:#6b7280;margin-top:8px">${msg2}</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => overlay.remove(), count >= 2 ? 4500 : 4000);
+        }
+
+        function demoPlayRecord() {
+            const overlay = document.createElement('div');
+            overlay.className = 'anim-overlay';
+            overlay.innerHTML = `
+                <div class="anim-leaf" style="text-align:center">
+                    <div style="font-size:4rem;margin-bottom:12px">🌿</div>
+                    <div style="font-size:1.25rem;font-weight:600;color:var(--green-800)">+30 kg CO₂e</div>
+                    <div style="font-size:0.95rem;color:#6b7280;margin-top:6px">相當於 1.5 棵樹一年吸收量</div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => overlay.remove(), 2100);
+        }
+        function demoPlaySmallTree() {
+            playSmallTreeAnimation(3);
+        }
+        function demoPlayTwentyTrees() {
+            playTwentyTreesAnimation();
+        }
+        function demoPlayTreeAlive() {
+            playTreeAliveAnimation(1);
+        }
+        function demoShowBadge() {
+            const list = getTransactions();
+            const hasEnough = list.reduce((s, x) => s + x.co2, 0) >= CO2_PER_TREE_LIFE;
+            if (!hasEnough) {
+                const demo = { date: new Date().toISOString().slice(0, 10), category: 'other', categoryLabel: '其他', weight: 834, co2: 1000 };
+                list.unshift(demo);
+                saveTransactions(list);
+            }
+            showPanel('contribution');
+            renderContribution();
+        }
+
+        function renderContribution() {
+            const list = getTransactions();
+            const empty = document.getElementById('contributionEmpty');
+            const content = document.getElementById('contributionContent');
+
+            if (list.length === 0) {
+                empty.style.display = 'block';
+                content.style.display = 'none';
+                return;
+            }
+            empty.style.display = 'none';
+            content.style.display = 'block';
+
+            const total = list.reduce((s, x) => s + x.co2, 0);
+            const treesYear = (total / CO2_PER_TREE_YEAR).toFixed(1);
+            const treesLife = Math.floor(total / CO2_PER_TREE_LIFE);
+            const remain = CO2_PER_TREE_YEAR - (total % CO2_PER_TREE_YEAR);
+            const pct = (total % CO2_PER_TREE_YEAR) / CO2_PER_TREE_YEAR * 100;
+
+            document.getElementById('totalCo2').textContent = total;
+            const badgeZone = document.getElementById('badgeZone');
+            if (treesLife >= 1) {
+                badgeZone.style.display = 'flex';
+                const showCount = Math.min(treesLife, 5);
+                const badgeHtml = Array(showCount).fill(0).map(() =>
+                    '<div class="badge-item"><span class="badge-icon">🏅</span><span>種樹者</span></div>'
+                ).join('');
+                badgeZone.innerHTML = treesLife > 5
+                    ? badgeHtml + `<div class="badge-item" style="background:#fef9c3;border-color:#eab308"><span>×${treesLife}</span></div>`
+                    : badgeHtml;
+            } else {
+                badgeZone.style.display = 'none';
+                badgeZone.innerHTML = '';
+            }
+            const treesYearInt = Math.floor(total / CO2_PER_TREE_YEAR);
+            const treesYearDisp = document.getElementById('treesYearDisplay');
+            const treesYearCnt = document.getElementById('treesYearCount');
+            treesYearDisp.innerHTML = treesYearInt > 0 ? Array(treesYearInt).fill('<span>🌳</span>').join('') : '<span style="opacity:0.5">🌱</span>';
+            treesYearDisp.className = 'tree-display' + (treesYearInt > 10 ? ' many' : '') + (treesYearInt > 20 ? ' lots' : '');
+            treesYearCnt.textContent = treesYearInt > 0 ? `≈ ${treesYear} 棵` : '0 棵';
+            const treesLifeDisp = document.getElementById('treesLifeDisplay');
+            const treesLifeCnt = document.getElementById('treesLifeCount');
+            treesLifeDisp.innerHTML = treesLife > 0 ? Array(treesLife).fill('<span>🌳</span>').join('') : '<span style="opacity:0.5">🌱</span>';
+            treesLifeDisp.className = 'tree-display' + (treesLife > 10 ? ' many' : '') + (treesLife > 20 ? ' lots' : '');
+            treesLifeCnt.textContent = treesLife > 0 ? `${treesLife} 棵` : '0 棵';
+            document.getElementById('progressFill').style.width = pct + '%';
+            document.getElementById('progressText').textContent =
+                remain < 2
+                    ? '就差一點！相當於多養一棵樹一年 🌿'
+                    : `再 ${remain.toFixed(0)} kg，相當於多養一棵樹一年`;
+
+            const tbody = document.getElementById('txList');
+            tbody.innerHTML = list.map(x => `
+                <tr><td>${x.date}</td><td>${x.categoryLabel || x.category}</td><td class="num">${x.co2}</td></tr>
+            `).join('');
+        }
+
+        function getNickname() {
+            return localStorage.getItem(NICKNAME_KEY) || '';
+        }
+        function saveNickname() {
+            const input = document.getElementById('nicknameInput');
+            if (input) {
+                const name = (input.value || '').trim();
+                localStorage.setItem(NICKNAME_KEY, name);
+                updateGreeting();
+            }
+        }
+        function updateGreeting() {
+            const greeting = document.getElementById('greeting');
+            const input = document.getElementById('nicknameInput');
+            const name = getNickname();
+            if (greeting) {
+                greeting.textContent = name ? `${name}，這是你的貢獻！` : '環保夥伴，這是你的貢獻！';
+            }
+            if (input) input.value = name;
+        }
+
+        function showPanel(id) {
+            document.querySelectorAll('.nav-tabs button').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+            document.querySelector(`.nav-tabs button[data-panel="${id}"]`).classList.add('active');
+            document.getElementById(id === 'calc' ? 'panelCalc' : 'panelContribution').classList.add('active');
+            if (id === 'contribution') renderContribution();
+        }
+
+        function exportBackup() {
+            const data = { transactions: getTransactions(), exported: new Date().toISOString() };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'furniture_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        function importBackup(ev) {
+            const f = ev.target.files[0];
+            if (!f) return;
+            const r = new FileReader();
+            r.onload = () => {
+                try {
+                    const data = JSON.parse(r.result);
+                    const tx = data.transactions || (Array.isArray(data) ? data : []);
+                    if (tx.length) {
+                        saveTransactions(tx);
+                        renderContribution();
+                        alert('已還原 ' + tx.length + ' 筆紀錄');
+                    } else alert('備份檔無有效紀錄');
+                } catch (e) { alert('無法讀取備份檔'); }
+            };
+            r.readAsText(f);
+            ev.target.value = '';
+        }
+
+        updateGreeting();
+        renderContribution();
+    </script>
+</body>
+</html>
