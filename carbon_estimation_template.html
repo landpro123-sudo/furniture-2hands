@@ -1026,6 +1026,9 @@
         }
         async function logout() {
             if (auth) await auth.signOut();
+            if (typeof FB !== 'undefined') {
+                FB.logout(function() {});
+            }
         }
 
         async function getNicknameFromFirestore() {
