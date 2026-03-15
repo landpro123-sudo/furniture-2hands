@@ -1134,11 +1134,9 @@
                         else reject(new Error(res.status === 'unknown' ? '用戶取消' : 'FB 登入失敗'));
                     }, { scope: 'public_profile' });
                 });
-                sessionStorage.setItem('justLoggedIn', '1');
                 const credential = firebase.auth.FacebookAuthProvider.credential(token);
                 await auth.signInWithCredential(credential);
             } catch (e) {
-                sessionStorage.removeItem('justLoggedIn');
                 if (e.message !== '用戶取消') {
                     console.warn('FB 登入失敗', e);
                     alert('FB 登入失敗，請確認 Firebase 已啟用 Facebook 登入，且網域已加入授權清單。');
@@ -1218,19 +1216,23 @@
                 return;
             }
             const uid = user.uid;
-            const justLoggedIn = sessionStorage.getItem('justLoggedIn');
+            const lastTimeKey = 'loginCountLastTime_' + uid;
+            const lastTime = sessionStorage.getItem(lastTimeKey);
+            const now = Date.now();
+            const throttleMs = 30000;
+            const shouldCount = !lastTime || (now - parseInt(lastTime, 10)) >= throttleMs;
             try {
                 const docRef = db.collection('users').doc(uid);
                 const doc = await docRef.get();
                 let loginCount = (doc.exists && doc.data().loginCount) ? doc.data().loginCount : 0;
-                if (justLoggedIn) {
-                    sessionStorage.removeItem('justLoggedIn');
+                if (shouldCount) {
+                    sessionStorage.setItem(lastTimeKey, now.toString());
                     loginCount += 1;
                     await docRef.set({ loginCount, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
                 }
                 if (loginCount <= 0) { el.style.display = 'none'; return; }
                 el.style.display = 'block';
-                el.textContent = loginCount === 1 ? '這是您第一次登入。' : `您第 ${loginCount} 次登入了，歡迎回來！`;
+                el.textContent = loginCount === 1 ? '歡迎您來，這是您第 1 次使用' : '歡迎回來，這是您第 ' + loginCount + ' 次使用';
             } catch (e) {
                 el.style.display = 'none';
             }
