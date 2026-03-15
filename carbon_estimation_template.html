@@ -369,6 +369,7 @@
             color: var(--green-800);
             font-weight: 600;
         }
+        .welcome-msg { font-size: 0.95rem; }
 
         /* 累計成果：更明顯的卡片設計 */
         .achievement-cards {
@@ -512,6 +513,7 @@
                 <span class="greeting" id="greeting">環保夥伴，這是你的貢獻！</span>
                 <input type="text" id="nicknameInput" placeholder="輸入暱稱（選填，優先於 FB 名稱顯示）" maxlength="20" onblur="saveNickname()" onkeydown="if(event.key==='Enter'){saveNickname();this.blur()}">
             </div>
+            <p id="welcomeMsg" class="welcome-msg" style="display:none;margin-top:0;margin-bottom:12px;color:var(--green-700);font-weight:500;"></p>
             <div id="contributionEmpty" class="empty-state">
                 記錄家具流通，累積你的減碳貢獻。往下使用減碳計算，完成後點「記錄這次減碳結果」即可累積。
             </div>
@@ -536,7 +538,7 @@
                     <div class="progress-bar-fill" id="progressFill" style="width:0%"></div>
                 </div>
                 <div class="progress-text" id="progressText">再 20 kg，相當於多養一棵樹一年</div>
-                <p class="note" style="margin-top:12px;margin-bottom:0">往下拉可查看交易紀錄、匯出備份。</p>
+                <p class="note" style="margin-top:12px;margin-bottom:0">往下拉可查看流通記錄、匯出備份。</p>
             </div>
         </section>
 
@@ -577,9 +579,9 @@
             <p class="note" style="margin-top:16px">公式：減碳量 = 家具重量 × 1.2。概念：流通延續使用 = 避免製造新家具 = 避免該件家具生命週期中的碳排放。</p>
         </section>
 
-        <!-- 三、交易紀錄（需要時往下拉查看） -->
+        <!-- 三、流通記錄（需要時往下拉查看） -->
         <section id="sectionTxRecords" class="card" style="display:none">
-            <h2 class="card-title">📝 交易紀錄</h2>
+            <h2 class="card-title">📝 流通記錄</h2>
             <div class="table-wrap">
                 <table>
                     <thead><tr><th>日期</th><th>類別</th><th class="num">減碳 (kg)</th></tr></thead>
@@ -987,10 +989,13 @@
 
         async function loginWithFacebook() {
             if (!auth) { alert('Firebase 未初始化'); return; }
+            if (auth.currentUser) return;
             try {
+                sessionStorage.setItem('justLoggedIn', '1');
                 const provider = new firebase.auth.FacebookAuthProvider();
                 await auth.signInWithPopup(provider);
             } catch (e) {
+                sessionStorage.removeItem('justLoggedIn');
                 console.warn('FB 登入失敗', e);
                 alert('FB 登入失敗，請確認 Firebase 已啟用 Facebook 登入，且網域已加入授權清單。');
             }
@@ -1024,15 +1029,16 @@
             }
             await updateGreeting();
         }
-        async function updateGreeting() {
+        async function updateGreeting(user) {
+            const u = user || auth?.currentUser;
             const greeting = document.getElementById('greeting');
             const input = document.getElementById('nicknameInput');
             let displayName = '環保夥伴';
             let inputVal = '';
-            if (auth?.currentUser) {
+            if (u) {
                 const nickname = await getNicknameFromFirestore();
                 inputVal = nickname || localStorage.getItem(NICKNAME_KEY) || '';
-                displayName = nickname || auth.currentUser.displayName || '環保夥伴';
+                displayName = nickname || u.displayName || '環保夥伴';
             } else {
                 inputVal = localStorage.getItem(NICKNAME_KEY) || '';
                 displayName = inputVal || '環保夥伴';
@@ -1041,6 +1047,32 @@
             if (input) {
                 input.value = inputVal;
                 input.placeholder = inputVal ? '換暱稱？' : '輸入暱稱（選填，優先於 FB 名稱顯示）';
+            }
+        }
+
+        async function updateWelcomeMessage(user) {
+            const el = document.getElementById('welcomeMsg');
+            if (!el) return;
+            if (!user || !db) {
+                el.style.display = 'none';
+                return;
+            }
+            const uid = user.uid;
+            const justLoggedIn = sessionStorage.getItem('justLoggedIn');
+            try {
+                const docRef = db.collection('users').doc(uid);
+                const doc = await docRef.get();
+                let loginCount = (doc.exists && doc.data().loginCount) ? doc.data().loginCount : 0;
+                if (justLoggedIn) {
+                    sessionStorage.removeItem('justLoggedIn');
+                    loginCount += 1;
+                    await docRef.set({ loginCount, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true });
+                }
+                if (loginCount <= 0) { el.style.display = 'none'; return; }
+                el.style.display = 'block';
+                el.textContent = loginCount === 1 ? '這是您第一次登入。' : `您第 ${loginCount} 次登入了，歡迎回來！`;
+            } catch (e) {
+                el.style.display = 'none';
             }
         }
 
@@ -1084,13 +1116,15 @@
         auth?.onAuthStateChanged(async (user) => {
             updateAuthUI(user);
             localStorage.removeItem(STORAGE_KEY);
-            await updateGreeting();
+            await updateGreeting(user);
+            await updateWelcomeMessage(user);
             await renderContribution();
         });
 
         (async function init() {
             updateAuthUI(auth?.currentUser || null);
-            await updateGreeting();
+            await updateGreeting(auth?.currentUser || null);
+            await updateWelcomeMessage(auth?.currentUser || null);
             await renderContribution();
         })();
     </script>
