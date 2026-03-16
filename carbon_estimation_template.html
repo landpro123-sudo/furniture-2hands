@@ -393,6 +393,37 @@
             .auth-block.auth-block-login { max-width: none; }
         }
 
+        /* 對照表與參考文獻按鍵區（① ② 樣式，等寬） */
+        .ref-buttons-zone {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .ref-btn {
+            flex: 1;
+            min-width: 0;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #e8f4fd 0%, #dbeafe 100%);
+            border: 2px solid #1877f2;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1e40af;
+            cursor: pointer;
+            font-family: inherit;
+            text-align: center;
+            transition: background 0.15s, color 0.15s;
+        }
+        .ref-btn:hover {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            color: #0d65d9;
+        }
+        .ref-content { display: none; margin-top: 0; }
+        .ref-content.visible { display: block; }
+        @media (max-width: 560px) {
+            .ref-buttons-zone { flex-direction: column; }
+        }
+
         /* 暱稱區 */
         .nickname-row {
             display: flex;
@@ -632,85 +663,89 @@
             <p class="note note-backup" style="margin-top:12px;margin-bottom:0;padding-top:12px;border-top:1px solid #e5e7eb">（建議定期「匯出備份」保存紀錄，換裝置或資料遺失時用「匯入還原」自行還原）</p>
         </section>
 
-        <!-- 四、家具類別預設重量與估算減碳重量對照表 -->
-        <section class="card">
-            <h2 class="card-title">📋 家具類別預設重量與估算減碳重量對照表</h2>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>家具類別</th>
-                            <th class="num">預設重量 (kg)</th>
-                            <th class="num">排放係數</th>
-                            <th class="num">估算減碳 (kg CO₂e)</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr><td>書桌</td><td class="num">25</td><td class="num">1.2</td><td class="num">30</td></tr>
-                        <tr><td>沙發</td><td class="num">60</td><td class="num">1.2</td><td class="num">72</td></tr>
-                        <tr><td>衣櫃</td><td class="num">40</td><td class="num">1.2</td><td class="num">48</td></tr>
-                        <tr><td>床架</td><td class="num">35</td><td class="num">1.2</td><td class="num">42</td></tr>
-                        <tr><td>椅子</td><td class="num">8</td><td class="num">1.2</td><td class="num">9.6</td></tr>
-                        <tr><td>茶几</td><td class="num">15</td><td class="num">1.2</td><td class="num">18</td></tr>
-                        <tr><td>書櫃</td><td class="num">30</td><td class="num">1.2</td><td class="num">36</td></tr>
-                        <tr><td>餐桌</td><td class="num">30</td><td class="num">1.2</td><td class="num">36</td></tr>
-                        <tr><td>梳妝台</td><td class="num">35</td><td class="num">1.2</td><td class="num">42</td></tr>
-                        <tr><td>其他<sup>*</sup></td><td class="num">20</td><td class="num">1.2</td><td class="num">24</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <p class="note">排放係數參考：木製家具約 1.0～1.5 kg CO₂e/kg（張南等 2016 生態學報、木質建材 LCA 研究等）。本表採用 1.2 作為保守估計。</p>
-            <p class="note" style="margin-top:8px"><sup>*</sup>其他：實際流通時，可能會有鞋櫃、電視櫃、置物架、嬰兒床、嬰兒推車、辦公椅、吧台椅、其他未列出的家具等，可選此類別並視需要自填重量。</p>
-        </section>
-
-        <!-- 五、碳排放計算依據與參考文獻 -->
+        <!-- 四、家具類別對照表與碳排放參考文獻（按鍵展開） -->
         <section id="sectionReferences" class="card">
-            <h2 class="card-title">📚 碳排放計算依據與參考文獻</h2>
-            <p style="margin-bottom:16px;color:#4b5563;font-size:0.95rem">本平台所用碳排放係數與樹木對應關係的明確來源，供對外說明或報告引用。</p>
-
-            <h3 style="font-size:1rem;font-weight:600;color:var(--green-800);margin:20px 0 12px 0;padding-bottom:6px;border-bottom:1px solid var(--green-200)">一、排放係數（1.2 kg CO₂e/kg 家具）</h3>
-            <p><strong>減碳量 = 家具重量 × 1.2</strong></p>
-            <p style="margin-top:8px;font-size:0.9rem;color:#4b5563">本平台採用 1.2 kg CO₂e/kg 作為木製家具單位重量的碳排放係數（保守估計）。</p>
-            <div class="table-wrap" style="margin-top:12px">
-                <table>
-                    <thead><tr><th>來源</th><th>數值／範圍</th><th>說明</th></tr></thead>
-                    <tbody>
-                        <tr><td>木質建材碳足跡研究（2022）</td><td>地板 1.21、木門 1.26 kg CO₂e/kg</td><td>基於 LCA，與本平台 1.2 相近</td></tr>
-                        <tr><td>張南等（2016）生態學報</td><td>依材質與設計而異</td><td>三聚氰胺板家具碳足跡最低</td></tr>
-                        <tr><td>生態設計木製床（2016）</td><td>1.71 kg CO₂-eq/kg</td><td>較傳統家具低約 15%</td></tr>
-                        <tr><td>文獻綜合範圍</td><td>約 1.0～1.5 kg CO₂e/kg</td><td>本平台採 1.2 作為保守估計</td></tr>
-                    </tbody>
-                </table>
+            <div class="ref-buttons-zone">
+                <button type="button" class="ref-btn" onclick="toggleRefContent('refContentTable')">① 家具類別預設重量與估算減碳重量對照表</button>
+                <button type="button" class="ref-btn" onclick="toggleRefContent('refContentRefs')">② 碳排放計算依據與參考文獻</button>
             </div>
-            <p class="note" style="margin-top:12px">參考文獻：張南等（2016）生態學報 36(22): 7235-7243；木竹藤家具碳足跡評價研究進展（2024）；數智化生產線木質建材（2022）。</p>
-
-            <h3 style="font-size:1rem;font-weight:600;color:var(--green-800);margin:20px 0 12px 0;padding-bottom:6px;border-bottom:1px solid var(--green-200)">二、樹木對應關係</h3>
-            <div class="table-wrap" style="margin-top:12px">
-                <table>
-                    <thead><tr><th>換算</th><th class="num">數值</th><th>用途</th></tr></thead>
-                    <tbody>
-                        <tr><td>一棵樹／年</td><td class="num">20 kg CO₂e</td><td>日常回饋、小里程碑</td></tr>
-                        <tr><td>20 棵樹／年</td><td class="num">400 kg CO₂e</td><td>中里程碑</td></tr>
-                        <tr><td>一棵樹百年生命</td><td class="num">1,000 kg CO₂e</td><td>大里程碑</td></tr>
-                    </tbody>
-                </table>
+            <div id="refContentTable" class="ref-content card" style="padding:20px;margin-top:12px;background:#fafafa;border:1px solid #e5e7eb;border-radius:8px">
+                <h3 class="card-title" style="margin-bottom:16px">📋 家具類別預設重量與估算減碳重量對照表</h3>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>家具類別</th>
+                                <th class="num">預設重量 (kg)</th>
+                                <th class="num">排放係數</th>
+                                <th class="num">估算減碳 (kg CO₂e)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td>書桌</td><td class="num">25</td><td class="num">1.2</td><td class="num">30</td></tr>
+                            <tr><td>沙發</td><td class="num">60</td><td class="num">1.2</td><td class="num">72</td></tr>
+                            <tr><td>衣櫃</td><td class="num">40</td><td class="num">1.2</td><td class="num">48</td></tr>
+                            <tr><td>床架</td><td class="num">35</td><td class="num">1.2</td><td class="num">42</td></tr>
+                            <tr><td>椅子</td><td class="num">8</td><td class="num">1.2</td><td class="num">9.6</td></tr>
+                            <tr><td>茶几</td><td class="num">15</td><td class="num">1.2</td><td class="num">18</td></tr>
+                            <tr><td>書櫃</td><td class="num">30</td><td class="num">1.2</td><td class="num">36</td></tr>
+                            <tr><td>餐桌</td><td class="num">30</td><td class="num">1.2</td><td class="num">36</td></tr>
+                            <tr><td>梳妝台</td><td class="num">35</td><td class="num">1.2</td><td class="num">42</td></tr>
+                            <tr><td>其他<sup>*</sup></td><td class="num">20</td><td class="num">1.2</td><td class="num">24</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="note">排放係數參考：木製家具約 1.0～1.5 kg CO₂e/kg（張南等 2016 生態學報、木質建材 LCA 研究等）。本表採用 1.2 作為保守估計。</p>
+                <p class="note" style="margin-top:8px"><sup>*</sup>其他：實際流通時，可能會有鞋櫃、電視櫃、置物架、嬰兒床、嬰兒推車、辦公椅、吧台椅、其他未列出的家具等，可選此類別並視需要自填重量。</p>
             </div>
-            <p style="margin-top:12px;font-size:0.9rem;color:#4b5563">本平台採 20 kg CO₂e/棵/年 作為保守估計，落在文獻常見 10～40 kg 範圍內。</p>
-            <div class="table-wrap" style="margin-top:12px">
-                <table>
-                    <thead><tr><th>來源</th><th>數值／範圍</th><th>說明</th></tr></thead>
-                    <tbody>
-                        <tr><td>8billiontrees、環保科普（無日期）</td><td>10～40 kg CO₂/年，平均 22～25 kg</td><td>因樹種、樹齡、環境而異</td></tr>
-                        <tr><td>EPA EnviroAtlas（2020）</td><td>USDA i-Tree 模型</td><td>州別 0.168～0.581 kgC/m² 樹冠/年</td></tr>
-                        <tr><td>Nowak et al.（2013）</td><td>都市樹木碳儲存與吸收</td><td>Environmental Pollution 178: 229–236</td></tr>
-                        <tr><td>國家林產技術平臺（無日期）</td><td>闊葉樹林 3.7 噸/公頃/年等</td><td>換算至單棵樹約十餘至數十 kg/年</td></tr>
-                    </tbody>
-                </table>
-            </div>
+            <div id="refContentRefs" class="ref-content card" style="padding:20px;margin-top:12px;background:#fafafa;border:1px solid #e5e7eb;border-radius:8px">
+                <h3 class="card-title" style="margin-bottom:16px">📚 碳排放計算依據與參考文獻</h3>
+                <p style="margin-bottom:16px;color:#4b5563;font-size:0.95rem">本平台所用碳排放係數與樹木對應關係的明確來源，供對外說明或報告引用。</p>
 
-            <h3 style="font-size:1rem;font-weight:600;color:var(--green-800);margin:20px 0 12px 0;padding-bottom:6px;border-bottom:1px solid var(--green-200)">三、計算邏輯</h3>
-            <p><strong>概念</strong>：家具流通延續使用 = 避免製造新家具 = 避免該件家具生命週期中的碳排放。</p>
-            <p style="margin-top:8px;font-size:0.9rem;color:#4b5563">本平台以「避免的碳排放」作為減碳量，採用排放係數 1.2 kg CO₂e/kg（木製家具文獻範圍內之保守值）及樹木對應 20 kg/棵/年（文獻常見 10～40 kg 範圍內之保守值）。</p>
+                <h4 style="font-size:1rem;font-weight:600;color:var(--green-800);margin:20px 0 12px 0;padding-bottom:6px;border-bottom:1px solid var(--green-200)">一、排放係數（1.2 kg CO₂e/kg 家具）</h4>
+                <p><strong>減碳量 = 家具重量 × 1.2</strong></p>
+                <p style="margin-top:8px;font-size:0.9rem;color:#4b5563">本平台採用 1.2 kg CO₂e/kg 作為木製家具單位重量的碳排放係數（保守估計）。</p>
+                <div class="table-wrap" style="margin-top:12px">
+                    <table>
+                        <thead><tr><th>來源</th><th>數值／範圍</th><th>說明</th></tr></thead>
+                        <tbody>
+                            <tr><td>木質建材碳足跡研究（2022）</td><td>地板 1.21、木門 1.26 kg CO₂e/kg</td><td>基於 LCA，與本平台 1.2 相近</td></tr>
+                            <tr><td>張南等（2016）生態學報</td><td>依材質與設計而異</td><td>三聚氰胺板家具碳足跡最低</td></tr>
+                            <tr><td>生態設計木製床（2016）</td><td>1.71 kg CO₂-eq/kg</td><td>較傳統家具低約 15%</td></tr>
+                            <tr><td>文獻綜合範圍</td><td>約 1.0～1.5 kg CO₂e/kg</td><td>本平台採 1.2 作為保守估計</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p class="note" style="margin-top:12px">參考文獻：張南等（2016）生態學報 36(22): 7235-7243；木竹藤家具碳足跡評價研究進展（2024）；數智化生產線木質建材（2022）。</p>
+
+                <h4 style="font-size:1rem;font-weight:600;color:var(--green-800);margin:20px 0 12px 0;padding-bottom:6px;border-bottom:1px solid var(--green-200)">二、樹木對應關係</h4>
+                <div class="table-wrap" style="margin-top:12px">
+                    <table>
+                        <thead><tr><th>換算</th><th class="num">數值</th><th>用途</th></tr></thead>
+                        <tbody>
+                            <tr><td>一棵樹／年</td><td class="num">20 kg CO₂e</td><td>日常回饋、小里程碑</td></tr>
+                            <tr><td>20 棵樹／年</td><td class="num">400 kg CO₂e</td><td>中里程碑</td></tr>
+                            <tr><td>一棵樹百年生命</td><td class="num">1,000 kg CO₂e</td><td>大里程碑</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p style="margin-top:12px;font-size:0.9rem;color:#4b5563">本平台採 20 kg CO₂e/棵/年 作為保守估計，落在文獻常見 10～40 kg 範圍內。</p>
+                <div class="table-wrap" style="margin-top:12px">
+                    <table>
+                        <thead><tr><th>來源</th><th>數值／範圍</th><th>說明</th></tr></thead>
+                        <tbody>
+                            <tr><td>8billiontrees、環保科普（無日期）</td><td>10～40 kg CO₂/年，平均 22～25 kg</td><td>因樹種、樹齡、環境而異</td></tr>
+                            <tr><td>EPA EnviroAtlas（2020）</td><td>USDA i-Tree 模型</td><td>州別 0.168～0.581 kgC/m² 樹冠/年</td></tr>
+                            <tr><td>Nowak et al.（2013）</td><td>都市樹木碳儲存與吸收</td><td>Environmental Pollution 178: 229–236</td></tr>
+                            <tr><td>國家林產技術平臺（無日期）</td><td>闊葉樹林 3.7 噸/公頃/年等</td><td>換算至單棵樹約十餘至數十 kg/年</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4 style="font-size:1rem;font-weight:600;color:var(--green-800);margin:20px 0 12px 0;padding-bottom:6px;border-bottom:1px solid var(--green-200)">三、計算邏輯</h4>
+                <p><strong>概念</strong>：家具流通延續使用 = 避免製造新家具 = 避免該件家具生命週期中的碳排放。</p>
+                <p style="margin-top:8px;font-size:0.9rem;color:#4b5563">本平台以「避免的碳排放」作為減碳量，採用排放係數 1.2 kg CO₂e/kg（木製家具文獻範圍內之保守值）及樹木對應 20 kg/棵/年（文獻常見 10～40 kg 範圍內之保守值）。</p>
+            </div>
         </section>
     </div>
 
@@ -773,6 +808,12 @@
 
         let lastCo2 = 0;
         let lastItems = [];
+
+        function toggleRefContent(id) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.toggle('visible');
+        }
 
         function makeCalcRowHtml() {
             const opts = '<option value="">請選擇</option>' + CATEGORY_OPTIONS.map(o =>
